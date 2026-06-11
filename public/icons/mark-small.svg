@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="MeetSync">
+  <!-- Glifo simplificado para tamanhos pequenos (toolbar 16/32): balão de chat cheio + câmera -->
+  <!-- balão -->
+  <path d="M4 5 H22 a3 3 0 0 1 3 3 V18 a3 3 0 0 1 -3 3 H11 L6 26 V21 H4 a3 3 0 0 1 -3 -3 V8 a3 3 0 0 1 3 -3 Z"
+        fill="#8AB4F8"/>
+  <!-- linhas de transcrição (brancas, grossas p/ ler em 16px) -->
+  <rect x="6" y="10" width="13" height="2.6" rx="1.3" fill="#fff"/>
+  <rect x="6" y="15" width="9" height="2.6" rx="1.3" fill="#fff"/>
+  <!-- câmera -->
+  <path d="M26 11 L30 8.5 a1 1 0 0 1 1.6 .8 V18.7 a1 1 0 0 1 -1.6 .8 L26 17 Z" fill="#669DF6"/>
+</svg>
