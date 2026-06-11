@@ -39,7 +39,7 @@ const SELECTORS = {
 const DEBOUNCE_MS = 300; // RNF-007
 const MIN_TEXT_LEN = 1;
 
-type OpenEntry = { id: string; name: string; text: string };
+type OpenEntry = { id: string; name: string; text: string; capturedAt: string };
 
 /**
  * Texto "limpo" de um nó de legenda: ignora ícones (Material Symbols em <i>), elementos
@@ -238,12 +238,14 @@ export class CaptionCapture {
         const transcript = store.get().session.transcript;
         const last = transcript[transcript.length - 1];
         if (last && last.participantName === name && sameUtterance(last.text, parsed.text)) {
-          open = { id: last.id, name, text: longer(last.text, parsed.text) };
+          // continuação/duplicata → mantém id E horário original da fala
+          open = { id: last.id, name, text: longer(last.text, parsed.text), capturedAt: last.capturedAt };
         } else {
-          open = { id: cryptoRandomId(), name, text: parsed.text };
+          open = { id: cryptoRandomId(), name, text: parsed.text, capturedAt: new Date().toISOString() };
         }
         this.rowToEntry.set(row, open);
       } else {
+        // atualização in-place da MESMA fala: preserva o horário de início (não vira "agora")
         open!.name = parsed.name;
         open!.text = parsed.text;
       }
@@ -253,7 +255,7 @@ export class CaptionCapture {
         participantName: name,
         participantAvatarUrl: parsed.avatarUrl,
         text: open!.text,
-        capturedAt: new Date().toISOString(),
+        capturedAt: open!.capturedAt,
         source: 'google-meet-caption',
       };
       store.upsertEntry(entry);

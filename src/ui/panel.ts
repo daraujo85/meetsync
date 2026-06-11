@@ -836,9 +836,11 @@ export class Panel {
         ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? `\n\n${summaryText}` : '')
         : buildTxt(session, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
 
+      // Espaça os downloads — o Chrome descarta downloads automáticos disparados juntos.
+      const gap = () => new Promise<void>((r) => setTimeout(r, 500));
       downloadText(buildFilename(session), mainContent);
-      if (summaryText && settings.separateSummaryFile) downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(session, summaryText));
-      if (settings.exportJson) downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText));
+      if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(session, summaryText)); }
+      if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
 
       if (store.get().captureStatus === 'processing') store.setCaptureStatus(store.get().captionsOn ? 'capturing' : 'waiting');
     } finally {
