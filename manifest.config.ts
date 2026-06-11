@@ -41,7 +41,6 @@ export default defineManifest({
   permissions: ['storage', 'downloads'],
   // localhost/127.0.0.1 concedidos na instalação: garante que o fetch ao Ollama no service
   // worker contorne o CORS (Chrome dispensa CORS para hosts em host_permissions).
+  // Permissões enxutas para a Chrome Web Store — sem curinga (evita rejeição no review).
   host_permissions: ['https://meet.google.com/*', 'http://localhost/*', 'http://127.0.0.1/*'],
-  // URLs remotas de Ollama (servidor interno) ficam opcionais e são pedidas sob demanda.
-  optional_host_permissions: ['http://*/*', 'https://*/*'],
 });
