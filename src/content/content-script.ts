@@ -4,7 +4,6 @@
 import tokensCss from '@/ui/styles/tokens.css?inline';
 import meetsyncCss from '@/ui/styles/meetsync.css?inline';
 import { store } from '@/services/store';
-import { buildTxt, buildFilename, buildMeetingJson, downloadText } from '@/services/export-txt';
 import { Panel } from '@/ui/panel';
 import { MeetDetector, type MeetingMeta } from './meet-detector';
 import { CaptionCapture } from './caption-capture';
@@ -83,24 +82,15 @@ async function main() {
     },
     onLeft: () => {
       store.setCaptureEndedAt(new Date().toISOString());
-      // Salva automaticamente a transcrição CRUA ao sair — o painel some na saída e o usuário
-      // perderia tudo. (IA fica só no download manual; aqui é a rede de segurança rápida.)
-      const s = store.get();
-      if (s.session.transcript.length > 0) {
-        try {
-          downloadText(buildFilename(s.session), buildTxt(s.session, { includeHeader: s.settings.includeHeaderByDefault }));
-          if (s.settings.exportJson) downloadText(buildFilename(s.session, '', 'json'), buildMeetingJson(s.session));
-        } catch {
-          /* ignora */
-        }
-      }
       try {
         capture.stop();
         chat.stop();
       } catch {
         /* ignora */
       }
-      store.resetSession();
+      // Mantém a transcrição visível no painel após a reunião (não zera) — o usuário lê/baixa
+      // com calma. O reset só acontece ao iniciar uma nova reunião (startSession).
+      store.endSession();
     },
   });
   detector.start();

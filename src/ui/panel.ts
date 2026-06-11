@@ -554,11 +554,13 @@ export class Panel {
 
   // ================= Atualização reativa =================
   private update(s: AppState) {
-    this.compact.classList.toggle('ms-hidden', s.ui.expanded || !s.inMeeting);
-    this.panel.classList.toggle('ms-hidden', !s.ui.expanded || !s.inMeeting);
+    const visible = s.inMeeting || s.ended; // pós-reunião: painel continua para revisar/baixar
+    this.compact.classList.toggle('ms-hidden', s.ui.expanded || !visible);
+    this.panel.classList.toggle('ms-hidden', !s.ui.expanded || !visible);
 
     this.ccBtn.classList.toggle('is-active', s.captionsOn);
     this.captionsToggle.setOn(s.captionsOn);
+    this.captionsToggle.setDisabled(s.ended);
 
     // Indicador compacto + status strip (REC/clay) — só atualiza quando o estado muda.
     if (this.lastDotKind !== s.captureStatus) {
@@ -573,7 +575,8 @@ export class Panel {
       this.compactDotLabel.textContent = m.label;
       this.compactDotLabel.className = m.lcls;
     }
-    if (s.captureStatus === 'capturing') statusInto(this.stripStatus, 'rec', 'Captura ativa');
+    if (s.ended) statusInto(this.stripStatus, 'idle', 'Reunião encerrada — revise e baixe abaixo');
+    else if (s.captureStatus === 'capturing') statusInto(this.stripStatus, 'rec', 'Captura ativa');
     else if (s.captureStatus === 'processing') statusInto(this.stripStatus, 'busy', 'Processando…');
     else if (s.captureStatus === 'error') statusInto(this.stripStatus, 'error', 'Erro ao processar IA');
     else statusInto(this.stripStatus, 'paused', 'Captura pausada');
@@ -769,7 +772,8 @@ export class Panel {
   }
 
   private renderTail(s: AppState) {
-    if (s.captureStatus === 'capturing') statusInto(this.tailStatus, 'rec', 'Capturando legendas em tempo real…');
+    if (s.ended) statusInto(this.tailStatus, 'idle', 'Reunião encerrada — esta transcrição fica aqui até você sair da aba.');
+    else if (s.captureStatus === 'capturing') statusInto(this.tailStatus, 'rec', 'Capturando legendas em tempo real…');
     else statusInto(this.tailStatus, 'paused', 'Captura pausada — ligue as legendas para continuar');
   }
 

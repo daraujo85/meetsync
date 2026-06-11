@@ -23,6 +23,8 @@ export type UiState = {
 
 export type AppState = {
   inMeeting: boolean;
+  /** true depois que a reunião terminou, mas a transcrição ainda está visível para revisar/baixar. */
+  ended: boolean;
   captureStatus: CaptureStatus;
   /** true quando as legendas do Meet estão (acreditamos) ativas. */
   captionsOn: boolean;
@@ -51,6 +53,7 @@ export function cryptoRandomId(): string {
 class Store {
   private state: AppState = {
     inMeeting: false,
+    ended: false,
     captureStatus: 'idle',
     captionsOn: false,
     session: emptySession(),
@@ -110,13 +113,25 @@ class Store {
       ...meta,
     };
     this.state.inMeeting = true;
+    this.state.ended = false;
     this.emit();
   }
 
-  /** Reset total ao sair/trocar de reunião (RF-009, RF-110). */
+  /** Reunião terminou: mantém a transcrição visível para revisar/baixar (não zera). */
+  endSession() {
+    this.state.inMeeting = false;
+    this.state.ended = true;
+    this.state.captionsOn = false;
+    this.state.captureStatus = 'idle';
+    this.state.ui.expanded = true; // abre o painel para o usuário ver/baixar
+    this.emit();
+  }
+
+  /** Reset total ao trocar de reunião / iniciar nova (RF-009, RF-110). */
   resetSession() {
     this.state.session = emptySession();
     this.state.inMeeting = false;
+    this.state.ended = false;
     this.state.captionsOn = false;
     this.state.captureStatus = 'idle';
     this.state.ui.summaryText = undefined;
