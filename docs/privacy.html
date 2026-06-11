@@ -5,18 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>MeetSync — Política de Privacidade</title>
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: -apple-system, Roboto, Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #202124; background: #fff; }
-  @media (prefers-color-scheme: dark) { body { background: #0f0f0f; color: #e8eaed; } a { color: #8ab4f8; } code { background:#202124; } }
-  h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
-  .muted { color: #5f6368; font-size: .9rem; }
-  code { background: #f1f3f4; padding: 1px 5px; border-radius: 4px; }
-  hr { border: none; border-top: 1px solid #3c4043; margin: 3rem 0; }
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff; --fg: #202124; --muted: #5f6368; --line: #e0e0e0;
+    --accent: #1a73e8; --code-bg: rgba(26,115,232,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f0f0f; --fg: #e8eaed; --muted: #9aa0a6; --line: #3c4043; --accent: #8ab4f8; --code-bg: rgba(138,180,248,.16); }
+  }
+  * { box-sizing: border-box; }
+  body { font-family: 'Google Sans', -apple-system, Roboto, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 0 24px 64px; line-height: 1.65; color: var(--fg); background: var(--bg); }
+  a { color: var(--accent); }
+  h1 { font-size: 1.55rem; letter-spacing: -.01em; }
+  h2 { font-size: 1.12rem; margin-top: 2.2rem; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  /* tom azul sutil — legível em claro E escuro (cor herdada do texto) */
+  code { background: var(--code-bg); color: inherit; padding: 1.5px 6px; border-radius: 5px; font-size: .9em; font-family: 'Roboto Mono', ui-monospace, Menlo, monospace; }
+  hr { border: none; border-top: 1px solid var(--line); margin: 3.5rem 0; }
+  ul { padding-left: 1.2rem; } li { margin: .35rem 0; }
+
+  /* Cabeçalho com logo */
+  .ph-head { display: flex; align-items: center; gap: 14px; padding: 36px 0 8px; }
+  .ph-mark { width: 52px; height: 52px; flex: none; }
+  .ph-word { font-family: 'Quicksand', 'Trebuchet MS', sans-serif; font-size: 1.7rem; font-weight: 700; letter-spacing: -.01em; }
+  .ph-word b { font-weight: 700; }
+  .ph-meet { color: var(--fg); } .ph-sync { color: var(--accent); }
+  .ph-sub { color: var(--muted); font-size: .82rem; margin-top: 2px; }
 </style>
 </head>
 <body>
 
-<h1>MeetSync — Política de Privacidade</h1>
+<div class="ph-head">
+  <svg class="ph-mark" viewBox="0 0 256 256" aria-hidden="true">
+    <defs>
+      <radialGradient id="bg" cx="35%" cy="25%" r="75%"><stop offset="0%" stop-color="#3C4043"/><stop offset="70%" stop-color="#202124"/><stop offset="100%" stop-color="#17191C"/></radialGradient>
+      <linearGradient id="bl" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#AECBFA"/><stop offset="45%" stop-color="#8AB4F8"/><stop offset="100%" stop-color="#4285F4"/></linearGradient>
+      <linearGradient id="wh" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#E8EAED"/></linearGradient>
+    </defs>
+    <circle cx="128" cy="128" r="118" fill="url(#bg)"/>
+    <path d="M86 82 H159 Q178 82 178 101 V151 Q178 170 159 170 H114 L84 199 V170 H79 Q60 170 60 151 V101 Q60 82 79 82 Z" fill="none" stroke="url(#wh)" stroke-width="15" stroke-linejoin="round" stroke-linecap="round"/>
+    <line x1="97" y1="114" x2="148" y2="114" stroke="url(#bl)" stroke-width="11" stroke-linecap="round"/>
+    <line x1="97" y1="139" x2="130" y2="139" stroke="url(#bl)" stroke-width="11" stroke-linecap="round" opacity="0.95"/>
+    <path d="M187 113 L219 94 Q229 88 229 102 V154 Q229 168 219 162 L187 143 Z" fill="url(#bl)" opacity="0.95"/>
+  </svg>
+  <div>
+    <div class="ph-word"><span class="ph-meet">Meet</span><span class="ph-sync">Sync</span></div>
+    <div class="ph-sub">Extensão para Google Meet · DevSync</div>
+  </div>
+</div>
+
+<h1>Política de Privacidade</h1>
 <p class="muted">Última atualização: 11 de junho de 2026 · Desenvolvido pela DevSync</p>
 
 <p>O <strong>MeetSync</strong> é uma extensão do Chrome que captura as <strong>legendas e mensagens de chat exibidas pelo próprio Google Meet</strong>, organiza-as como uma conversa e permite exportá-las em arquivos <code>.txt</code> e <code>.json</code>. Esta política explica quais dados a extensão acessa e como eles são tratados.</p>
