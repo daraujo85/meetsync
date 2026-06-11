@@ -33,6 +33,7 @@ Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do
 ## Justificativa das permissões (campo "Privacy practices")
 - **storage:** salvar localmente as preferências do usuário (URL/modelo do Ollama, opções de exportação).
 - **downloads:** exportar a transcrição/ata como arquivos .txt e .json.
+- **notifications:** avisar o usuário quando a captura de uma reunião começa e quando a reunião termina (transcrição pronta para revisar/baixar) — feedback local, sem coleta de dados.
 - **host meet.google.com:** ler as legendas e o chat exibidos na própria página da reunião — função central da extensão.
 - **host localhost / 127.0.0.1:** comunicar-se, apenas quando o usuário ativa a IA, com um servidor Ollama na máquina do próprio usuário, para correção/resumo da transcrição.
 - **Uso de dados:** a extensão NÃO coleta dados de navegação, NÃO usa analytics e NÃO compartilha/vende dados. O conteúdo da reunião só sai do navegador se o usuário ativar a IA, e somente para a URL do Ollama configurada por ele.

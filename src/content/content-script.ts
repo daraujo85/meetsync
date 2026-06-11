@@ -42,6 +42,61 @@ function mountUi(): Panel {
   return panel;
 }
 
+/**
+ * Ponte com o popup da toolbar (ação do ícone do Chrome) e disparo das notificações de captura.
+ * O popup vive em outro contexto e não enxerga o store: ele pergunta o status por mensagem e
+ * pede o toggle do painel. As notificações são delegadas ao service worker (host permissions).
+ */
+function wireToolbarBridge() {
+  chrome.runtime.onMessage.addListener((msg: { type?: string }, _sender, sendResponse) => {
+    if (!msg || typeof msg.type !== 'string') return undefined;
+
+    if (msg.type === 'meetsync:get-status') {
+      const s = store.get();
+      sendResponse({
+        inMeeting: s.inMeeting,
+        ended: s.ended,
+        captureStatus: s.captureStatus,
+        captionsOn: s.captionsOn,
+        expanded: s.ui.expanded,
+        entries: s.session.transcript.length,
+        participants: s.session.participants.length,
+        meetingCode: s.session.meetingCode,
+      });
+      return true; // resposta assíncrona
+    }
+
+    if (msg.type === 'meetsync:toggle-panel') {
+      const next = !store.get().ui.expanded;
+      store.patchUi({ expanded: next });
+      sendResponse({ ok: true, expanded: next });
+      return true;
+    }
+
+    return undefined;
+  });
+
+  // Notifica início/fim da captura (uma vez por transição).
+  let lastInMeeting = false;
+  let lastEnded = false;
+  store.subscribe((s) => {
+    if (s.inMeeting && !lastInMeeting) {
+      chrome.runtime.sendMessage(
+        { type: 'meetsync:notify', kind: 'start', code: s.session.meetingCode },
+        () => void chrome.runtime.lastError,
+      );
+    }
+    if (s.ended && !lastEnded) {
+      chrome.runtime.sendMessage(
+        { type: 'meetsync:notify', kind: 'end', entries: s.session.transcript.length },
+        () => void chrome.runtime.lastError,
+      );
+    }
+    lastInMeeting = s.inMeeting;
+    lastEnded = s.ended;
+  });
+}
+
 /** Re-injeta o host se o Meet remover o nó do DOM (re-render de layout). Mantém estado/painel. */
 function keepHostAttached(host: HTMLElement) {
   window.setInterval(() => {
@@ -58,6 +113,7 @@ async function main() {
   const capture = handle.__capture;
   const chat = handle.__chat;
   keepHostAttached(handle.__host);
+  wireToolbarBridge();
 
   const detector = new MeetDetector({
     onJoined: (meta: MeetingMeta) => {

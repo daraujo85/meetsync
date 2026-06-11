@@ -14,6 +14,13 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     target: 'es2022',
+    rollupOptions: {
+      // Página de boas-vindas: não é referenciada no manifest (aberta via runtime.getURL),
+      // então precisa ser declarada como entrada extra para o crxjs/Rollup empacotá-la.
+      input: {
+        welcome: resolve(__dirname, 'src/welcome/welcome.html'),
+      },
+    },
   },
   // O dev-server do crxjs usa websocket para HMR do content script.
   server: {

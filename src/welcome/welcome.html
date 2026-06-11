@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bem-vindo ao MeetSync</title>
+    <style>
+      :root {
+        --bg: #17191c;
+        --card: #202124;
+        --line: #3c4043;
+        --fg: #e8eaed;
+        --dim: #9aa0a6;
+        --blue: #8ab4f8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        background: radial-gradient(75% 60% at 35% 20%, #2a2d31 0%, var(--bg) 70%);
+        color: var(--fg);
+        font-family: 'Google Sans', Roboto, system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+      }
+      .wrap {
+        width: 100%;
+        max-width: 620px;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 28px;
+      }
+      .brand img {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+      }
+      .brand h1 {
+        font-size: 28px;
+        margin: 0;
+        letter-spacing: 0.3px;
+      }
+      .brand p {
+        margin: 2px 0 0;
+        color: var(--dim);
+        font-size: 14px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 24px 26px;
+      }
+      h2 {
+        font-size: 16px;
+        margin: 0 0 16px;
+      }
+      ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+      ol li {
+        margin-bottom: 12px;
+      }
+      ol li strong {
+        color: #fff;
+      }
+      .muted {
+        color: var(--dim);
+        font-size: 13.5px;
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 22px;
+        background: var(--blue);
+        color: #1a1c1f;
+        font-weight: 600;
+        text-decoration: none;
+        padding: 11px 20px;
+        border-radius: 10px;
+      }
+      .cta:hover {
+        background: #a6c6fa;
+      }
+      .priv {
+        margin-top: 20px;
+        font-size: 12.5px;
+        color: var(--dim);
+      }
+      .foot {
+        margin-top: 22px;
+        text-align: center;
+        font-size: 12.5px;
+        color: var(--dim);
+      }
+      .foot a {
+        color: var(--blue);
+        text-decoration: none;
+      }
+      .foot a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="brand">
+        <!-- mesma marca usada na UI in-page (data: SVG) -->
+        <img
+          alt="MeetSync"
+          src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20256%20256'%3E%3Cdefs%3E%3CradialGradient%20id='bg'%20cx='35%25'%20cy='25%25'%20r='75%25'%3E%3Cstop%20offset='0%25'%20stop-color='%233C4043'/%3E%3Cstop%20offset='70%25'%20stop-color='%23202124'/%3E%3Cstop%20offset='100%25'%20stop-color='%2317191C'/%3E%3C/radialGradient%3E%3ClinearGradient%20id='bl'%20x1='0%25'%20y1='0%25'%20x2='100%25'%20y2='100%25'%3E%3Cstop%20offset='0%25'%20stop-color='%23AECBFA'/%3E%3Cstop%20offset='45%25'%20stop-color='%238AB4F8'/%3E%3Cstop%20offset='100%25'%20stop-color='%234285F4'/%3E%3C/linearGradient%3E%3ClinearGradient%20id='wh'%20x1='0%25'%20y1='0%25'%20x2='100%25'%20y2='100%25'%3E%3Cstop%20offset='0%25'%20stop-color='%23FFFFFF'/%3E%3Cstop%20offset='100%25'%20stop-color='%23E8EAED'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle%20cx='128'%20cy='128'%20r='118'%20fill='url(%23bg)'/%3E%3Cpath%20d='M86%2082%20H159%20Q178%2082%20178%20101%20V151%20Q178%20170%20159%20170%20H114%20L84%20199%20V170%20H79%20Q60%20170%2060%20151%20V101%20Q60%2082%2079%2082%20Z'%20fill='none'%20stroke='url(%23wh)'%20stroke-width='15'%20stroke-linejoin='round'%20stroke-linecap='round'/%3E%3Cline%20x1='97'%20y1='114'%20x2='148'%20y2='114'%20stroke='url(%23bl)'%20stroke-width='11'%20stroke-linecap='round'/%3E%3Cline%20x1='97'%20y1='139'%20x2='130'%20y2='139'%20stroke='url(%23bl)'%20stroke-width='11'%20stroke-linecap='round'%20opacity='0.95'/%3E%3Cpath%20d='M187%20113%20L219%2094%20Q229%2088%20229%20102%20V154%20Q229%20168%20219%20162%20L187%20143%20Z'%20fill='url(%23bl)'%20opacity='0.95'/%3E%3C/svg%3E"
+        />
+        <div>
+          <h1>MeetSync</h1>
+          <p>Transcrição das suas reuniões do Google Meet — direto no navegador.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Como usar</h2>
+        <ol>
+          <li><strong>Entre numa reunião</strong> no Google Meet. O MeetSync aparece num painel no canto da tela.</li>
+          <li>As <strong>legendas são ligadas automaticamente</strong> e a captura começa — você vê as falas em tempo real, como um chat.</li>
+          <li>Clique no <strong>ícone do MeetSync na barra do Chrome</strong> a qualquer momento para abrir ou recolher o painel.</li>
+          <li>Ao final, <strong>exporte em .txt ou .json</strong>. Opcionalmente, gere correção e resumo com um servidor <strong>Ollama</strong> local.</li>
+        </ol>
+        <p class="muted">A captura nunca toca no áudio: o MeetSync apenas lê as legendas que o próprio Meet exibe.</p>
+        <a class="cta" href="https://meet.google.com/">Ir para o Google Meet</a>
+        <p class="priv">
+          🔒 Os dados da reunião ficam no seu navegador. Nada é enviado para serviços externos sem a sua ação.
+        </p>
+      </div>
+
+      <div class="foot">
+        <a href="https://daraujo85.github.io/meetsync/privacy.html" target="_blank" rel="noopener noreferrer"
+          >Política de privacidade</a
+        >
+        &nbsp;·&nbsp;
+        <a href="https://github.com/daraujo85/meetsync" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </main>
+  </body>
+</html>
