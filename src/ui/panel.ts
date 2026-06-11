@@ -613,25 +613,46 @@ export class Panel {
   }
 
   // ---------- Resumo: status + conteúdo ----------
+  private rtKey = '';
+  private rtTextEl: HTMLElement | null = null;
   private renderRtStatus() {
     const s = store.get();
     const active = s.settings.realtimeSummary && this.ollamaReady(s) && s.inMeeting;
+
+    // Decide ícone (spinner|dot|none), classe e texto.
+    let icon: 'spinner' | 'dot' | 'none';
+    let cls: string;
+    let text = '';
     if (s.ui.summarizing) {
-      this.summaryStatus.className = 'ms-sum-status is-generating';
-      this.summaryStatus.replaceChildren(el('span', { class: 'ms-spinner' }), el('span', { text: 'Gerando resumo · aguardando o Ollama…' }));
-      return;
+      icon = 'spinner'; cls = 'ms-sum-status is-generating'; text = 'Gerando resumo · aguardando o Ollama…';
+    } else if (!active) {
+      icon = 'none'; cls = 'ms-sum-status ms-hidden';
+    } else {
+      const n = s.session.transcript.length;
+      const pending = this.transcriptSig(s) !== this.lastRtSig;
+      const secs = Math.max(0, Math.ceil((this.nextRtAt - Date.now()) / 1000));
+      const mmss = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+      if (n === 0) text = 'Aguardando as primeiras falas…';
+      else if (secs > 0) text = `Ao vivo · próxima em ${mmss}${pending ? ' · novas falas' : ''}`;
+      else text = 'Atualizando…';
+      icon = 'dot'; cls = 'ms-sum-status is-listening';
     }
-    if (!active) { this.summaryStatus.className = 'ms-sum-status ms-hidden'; return; }
-    const n = s.session.transcript.length;
-    const pending = this.transcriptSig(s) !== this.lastRtSig;
-    const secs = Math.max(0, Math.ceil((this.nextRtAt - Date.now()) / 1000));
-    const mmss = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-    let label: string;
-    if (n === 0) label = 'Aguardando as primeiras falas…';
-    else if (secs > 0) label = `Ao vivo · próxima em ${mmss}${pending ? ' · novas falas' : ''}`;
-    else label = 'Atualizando…';
-    this.summaryStatus.className = 'ms-sum-status is-listening';
-    this.summaryStatus.replaceChildren(el('span', { class: 'ms-status-dot ms-pulse-blue' }), el('span', { text: label }));
+
+    // Só recria os filhos quando o TIPO de ícone muda (evita reiniciar a animação a cada update/stream).
+    if (this.rtKey !== icon) {
+      this.rtKey = icon;
+      if (icon === 'none') {
+        this.summaryStatus.replaceChildren();
+        this.rtTextEl = null;
+      } else {
+        const ic = icon === 'spinner' ? el('span', { class: 'ms-spinner' }) : el('span', { class: 'ms-status-dot ms-pulse-blue' });
+        this.rtTextEl = el('span', { text });
+        this.summaryStatus.replaceChildren(ic, this.rtTextEl);
+      }
+    } else if (this.rtTextEl && this.rtTextEl.textContent !== text) {
+      this.rtTextEl.textContent = text;
+    }
+    if (this.summaryStatus.className !== cls) this.summaryStatus.className = cls;
   }
 
   private renderSummaryContent(s: AppState) {
