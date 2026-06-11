@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MeetSync — Política de Privacidade</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, Roboto, Arial, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #202124; background: #fff; }
+  @media (prefers-color-scheme: dark) { body { background: #0f0f0f; color: #e8eaed; } a { color: #8ab4f8; } code { background:#202124; } }
+  h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
+  .muted { color: #5f6368; font-size: .9rem; }
+  code { background: #f1f3f4; padding: 1px 5px; border-radius: 4px; }
+  hr { border: none; border-top: 1px solid #3c4043; margin: 3rem 0; }
+</style>
+</head>
+<body>
+
+<h1>MeetSync — Política de Privacidade</h1>
+<p class="muted">Última atualização: 11 de junho de 2026 · Desenvolvido pela DevSync</p>
+
+<p>O <strong>MeetSync</strong> é uma extensão do Chrome que captura as <strong>legendas e mensagens de chat exibidas pelo próprio Google Meet</strong>, organiza-as como uma conversa e permite exportá-las em arquivos <code>.txt</code> e <code>.json</code>. Esta política explica quais dados a extensão acessa e como eles são tratados.</p>
+
+<h2>1. Dados que a extensão acessa</h2>
+<ul>
+  <li><strong>Texto das legendas e do chat</strong> da reunião do Google Meet, enquanto você está em uma reunião e a captura está ativa.</li>
+  <li><strong>Metadados da reunião</strong> visíveis na página: título, link, código, data/horário e nomes dos participantes.</li>
+  <li><strong>Suas configurações</strong> da extensão (ex.: URL do servidor Ollama, modelo escolhido e preferências de exportação).</li>
+</ul>
+
+<h2>2. O que a extensão NÃO faz</h2>
+<ul>
+  <li>Não captura áudio bruto nem grava tela.</li>
+  <li>Não coleta dados de navegação, não usa rastreadores nem ferramentas de analytics.</li>
+  <li>Não vende, aluga nem compartilha seus dados com terceiros.</li>
+  <li>Não envia o conteúdo da reunião para servidores da DevSync nem para qualquer serviço externo por padrão.</li>
+</ul>
+
+<h2>3. Armazenamento</h2>
+<p>A transcrição da reunião fica <strong>no seu navegador</strong> (em memória e/ou em <code>chrome.storage.local</code>) e é isolada/descartada ao iniciar uma nova reunião. Os arquivos exportados (<code>.txt</code>/<code>.json</code>) são salvos localmente, por ação sua, na pasta de downloads do seu computador.</p>
+
+<h2>4. Recursos de IA (Ollama) — opcionais</h2>
+<p>A correção da transcrição e a geração de resumo/ata são <strong>opcionais</strong> e só funcionam se <em>você</em> configurar e ativar um servidor <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> (normalmente em <code>http://localhost:11434</code>, na sua própria máquina). Quando — e somente quando — você ativa esses recursos, o conteúdo da transcrição é enviado para a URL do Ollama que você configurou, para ser processado. Nenhum dado é enviado a terceiros além desse destino escolhido por você.</p>
+
+<h2>5. Permissões</h2>
+<ul>
+  <li><code>storage</code> — salvar suas configurações localmente.</li>
+  <li><code>downloads</code> — exportar a transcrição em arquivo.</li>
+  <li>Acesso a <code>meet.google.com</code> — ler as legendas/chat exibidos na reunião.</li>
+  <li>Acesso a <code>localhost</code>/<code>127.0.0.1</code> — falar com o Ollama na sua máquina, apenas quando a IA está ativa.</li>
+</ul>
+
+<h2>6. Contato</h2>
+<p>Dúvidas sobre privacidade: <a href="mailto:contato@devsync.com.br">contato@devsync.com.br</a>.</p>
+
+<hr />
+
+<h1>MeetSync — Privacy Policy (English)</h1>
+<p class="muted">Last updated: June 11, 2026 · Built by DevSync</p>
+
+<p><strong>MeetSync</strong> is a Chrome extension that captures the <strong>captions and chat messages already shown by Google Meet</strong>, organizes them as a conversation, and lets you export them as <code>.txt</code> and <code>.json</code> files. This policy explains what data the extension accesses and how it is handled.</p>
+
+<h2>1. Data the extension accesses</h2>
+<ul>
+  <li><strong>Caption and chat text</strong> from the Google Meet meeting, while you are in a meeting and capture is active.</li>
+  <li><strong>Meeting metadata</strong> visible on the page: title, link, code, date/time, and participant names.</li>
+  <li><strong>Your extension settings</strong> (e.g., Ollama server URL, chosen model, export preferences).</li>
+</ul>
+
+<h2>2. What the extension does NOT do</h2>
+<ul>
+  <li>Does not capture raw audio or record the screen.</li>
+  <li>Does not collect browsing data, trackers, or analytics.</li>
+  <li>Does not sell, rent, or share your data with third parties.</li>
+  <li>Does not send meeting content to DevSync servers or any external service by default.</li>
+</ul>
+
+<h2>3. Storage</h2>
+<p>The meeting transcript stays <strong>in your browser</strong> (in memory and/or <code>chrome.storage.local</code>) and is isolated/cleared when a new meeting starts. Exported files are saved locally, by your action, to your computer's downloads folder.</p>
+
+<h2>4. AI features (Ollama) — optional</h2>
+<p>Transcript correction and summary/minutes generation are <strong>optional</strong> and only work if <em>you</em> configure and enable an <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> server (typically <code>http://localhost:11434</code>, on your own machine). When — and only when — you enable these features, the transcript content is sent to the Ollama URL you configured for processing. No data is sent to any third party other than that destination you chose.</p>
+
+<h2>5. Permissions</h2>
+<ul>
+  <li><code>storage</code> — save your settings locally.</li>
+  <li><code>downloads</code> — export the transcript to a file.</li>
+  <li>Access to <code>meet.google.com</code> — read the captions/chat shown in the meeting.</li>
+  <li>Access to <code>localhost</code>/<code>127.0.0.1</code> — talk to Ollama on your machine, only when AI is enabled.</li>
+</ul>
+
+<h2>6. Contact</h2>
+<p>Privacy questions: <a href="mailto:contato@devsync.com.br">contato@devsync.com.br</a>.</p>
+
+</body>
+</html>
