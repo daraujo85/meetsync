@@ -45,13 +45,18 @@ function avatarColor(name: string): string {
 
 // ---------- helpers de status (ponto + texto, tons rec/paused/active/busy/error/idle) ----------
 type Tone = 'rec' | 'paused' | 'active' | 'busy' | 'error' | 'idle';
+// Idempotente: só recria o ícone quando o tom muda (não reinicia a animação a cada update).
 function statusInto(container: HTMLElement, tone: Tone, text: string) {
-  container.className = `ms-status is-${tone}`;
-  if (tone === 'busy') {
-    container.replaceChildren(el('span', { class: 'ms-spinner' }), el('span', { text }));
+  if (container.dataset.tone !== tone || container.childElementCount !== 2) {
+    container.dataset.tone = tone;
+    const icon = tone === 'busy' ? el('span', { class: 'ms-spinner' }) : el('span', { class: 'ms-status-dot' });
+    container.replaceChildren(icon, el('span', { text }));
   } else {
-    container.replaceChildren(el('span', { class: 'ms-status-dot' }), el('span', { text }));
+    const txt = container.lastElementChild;
+    if (txt && txt.textContent !== text) txt.textContent = text;
   }
+  const cls = `ms-status is-${tone}`;
+  if (container.className !== cls) container.className = cls;
 }
 
 // ---------- toggle ----------
@@ -172,6 +177,7 @@ export class Panel {
   private ccBtn!: HTMLButtonElement;
   private compactDot!: HTMLElement;
   private compactDotLabel!: HTMLElement;
+  private lastDotKind = '';
   private panelHeader!: HTMLElement;
   private aboutSheet!: HTMLElement;
 
@@ -555,21 +561,23 @@ export class Panel {
     this.ccBtn.classList.toggle('is-active', s.captionsOn);
     this.captionsToggle.setOn(s.captionsOn);
 
-    // Indicador compacto + status strip (REC/clay)
-    this.compactDot.className = 'ms-dot';
-    if (s.captureStatus === 'capturing') {
-      this.compactDot.classList.add('is-rec'); this.compactDotLabel.textContent = 'Captura ativa'; this.compactDotLabel.className = 'is-rec';
-      statusInto(this.stripStatus, 'rec', 'Captura ativa');
-    } else if (s.captureStatus === 'processing') {
-      this.compactDot.classList.add('is-processing'); this.compactDotLabel.textContent = 'Processando'; this.compactDotLabel.className = '';
-      statusInto(this.stripStatus, 'busy', 'Processando…');
-    } else if (s.captureStatus === 'error') {
-      this.compactDot.classList.add('is-error'); this.compactDotLabel.textContent = 'Erro IA'; this.compactDotLabel.className = 'is-error';
-      statusInto(this.stripStatus, 'error', 'Erro ao processar IA');
-    } else {
-      this.compactDot.classList.add('is-paused'); this.compactDotLabel.textContent = 'Pausado'; this.compactDotLabel.className = 'is-paused';
-      statusInto(this.stripStatus, 'paused', 'Captura pausada');
+    // Indicador compacto + status strip (REC/clay) — só atualiza quando o estado muda.
+    if (this.lastDotKind !== s.captureStatus) {
+      this.lastDotKind = s.captureStatus;
+      const map: Record<string, { dot: string; label: string; lcls: string }> = {
+        capturing: { dot: 'is-rec', label: 'Captura ativa', lcls: 'is-rec' },
+        processing: { dot: 'is-processing', label: 'Processando', lcls: '' },
+        error: { dot: 'is-error', label: 'Erro IA', lcls: 'is-error' },
+      };
+      const m = map[s.captureStatus] ?? { dot: 'is-paused', label: 'Pausado', lcls: 'is-paused' };
+      this.compactDot.className = `ms-dot ${m.dot}`;
+      this.compactDotLabel.textContent = m.label;
+      this.compactDotLabel.className = m.lcls;
     }
+    if (s.captureStatus === 'capturing') statusInto(this.stripStatus, 'rec', 'Captura ativa');
+    else if (s.captureStatus === 'processing') statusInto(this.stripStatus, 'busy', 'Processando…');
+    else if (s.captureStatus === 'error') statusInto(this.stripStatus, 'error', 'Erro ao processar IA');
+    else statusInto(this.stripStatus, 'paused', 'Captura pausada');
 
     // Tabs
     for (const [id, btn] of this.tabBtns) btn.classList.toggle('is-active', s.ui.activeTab === id);
