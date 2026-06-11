@@ -1,0 +1,20 @@
+{
+  "name": "meetsync",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Extensão Chrome (MV3) que captura as legendas do Google Meet, exibe como chat e exporta em .txt com correção/resumo opcional via Ollama.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "zip": "node scripts/zip.mjs",
+    "package": "npm run build && npm run zip"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.6.1",
+    "@types/chrome": "^0.0.270",
+    "@types/node": "^22.19.21",
+    "typescript": "^5.6.0",
+    "vite": "^8.0.0"
+  }
+}

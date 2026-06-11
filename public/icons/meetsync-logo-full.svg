@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">MeetSync logo completo</title>
+  <desc id="desc">Logo MeetSync com ícone de chat e vídeo em estilo dark mode, usando branco e azul claro.</desc>
+  <defs>
+    <radialGradient id="iconBg" cx="35%" cy="25%" r="75%">
+      <stop offset="0%" stop-color="#3C4043"></stop>
+      <stop offset="70%" stop-color="#202124"></stop>
+      <stop offset="100%" stop-color="#17191C"></stop>
+    </radialGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#AECBFA"></stop>
+      <stop offset="45%" stop-color="#8AB4F8"></stop>
+      <stop offset="100%" stop-color="#4285F4"></stop>
+    </linearGradient>
+    <linearGradient id="whiteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"></stop>
+      <stop offset="100%" stop-color="#E8EAED"></stop>
+    </linearGradient>
+    <filter id="softShadow" x="-25%" y="-25%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.35"></feDropShadow>
+    </filter>
+  </defs>
+
+  
+  <g transform="translate(70 55)" filter="url(#softShadow)">
+    <circle cx="125" cy="125" r="125" fill="url(#iconBg)"></circle>
+
+    
+    <path d="M82 78 H159 Q178 78 178 97 V151 Q178 170 159 170 H112 L82 200 V170 H78 Q59 170 59 151 V97 Q59 78 78 78 Z" fill="none" stroke="url(#whiteGrad)" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"></path>
+
+    
+    <line x1="96" y1="113" x2="148" y2="113" stroke="url(#blueGrad)" stroke-width="11" stroke-linecap="round"></line>
+    <line x1="96" y1="139" x2="130" y2="139" stroke="url(#blueGrad)" stroke-width="11" stroke-linecap="round" opacity="0.95"></line>
+
+    
+    <path d="M186 112 L219 93 Q229 87 229 101 V155 Q229 169 219 163 L186 144 Z" fill="url(#blueGrad)" opacity="0.95"></path>
+  </g>
+
+  
+  <g transform="translate(360 210)">
+    <text x="0" y="0" font-family="Google Sans, Product Sans, Inter, Roboto, Arial, sans-serif" font-size="130" font-weight="500" letter-spacing="-5" fill="url(#whiteGrad)">Meet</text>
+    <text x="322" y="0" font-family="Google Sans, Product Sans, Inter, Roboto, Arial, sans-serif" font-size="130" font-weight="500" letter-spacing="-5" fill="url(#blueGrad)">Sync</text>
+  </g>
+</svg>

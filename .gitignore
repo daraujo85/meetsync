@@ -1,0 +1,12 @@
+# deps
+node_modules/
+
+# build output (carregue via releases/ ou rode `npm run build`)
+dist/
+
+# zips soltos na raiz (os oficiais ficam em releases/)
+/meetsync-*.zip
+
+# sistema
+.DS_Store
+*.log

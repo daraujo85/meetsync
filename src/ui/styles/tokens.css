@@ -1,0 +1,58 @@
+/* Design tokens do MeetSync — Dark Mode (§9 do PRD).
+   Declarados em :host para viver dentro do Shadow DOM. */
+:host {
+  /* Cores */
+  --ms-bg-app: #0f0f0f;
+  --ms-bg-surface: #202124;
+  --ms-bg-surface-elevated: #2a2b2e;
+  --ms-bg-surface-hover: #303134;
+  --ms-border-subtle: #3c4043;
+  --ms-border-focus: #8ab4f8;
+  --ms-text-primary: #e8eaed;
+  --ms-text-secondary: #bdc1c6;
+  --ms-text-muted: #9aa0a6;
+  --ms-accent-blue: #8ab4f8;
+  --ms-accent-blue-strong: #669df6;
+  --ms-accent-blue-soft: rgba(138, 180, 248, 0.16);
+  --ms-accent-blue-soft-hover: rgba(138, 180, 248, 0.24);
+  --ms-accent-blue-border: rgba(138, 180, 248, 0.35);
+  --ms-accent-blue-track: rgba(138, 180, 248, 0.38);
+  --ms-danger-red: #f28b82;
+  --ms-danger-red-strong: #ea4335;
+  --ms-danger-red-soft: rgba(242, 139, 130, 0.16);
+  --ms-danger-soft: rgba(242, 139, 130, 0.16);
+  --ms-warning-yellow: #fdd663;
+  --ms-toggle-off: #5f6368;
+  --ms-toggle-thumb-off: #bdc1c6;
+  /* pausado / atenção — terracota da "porta" de sair do Meet */
+  --ms-paused-clay: #c77e45;
+  --ms-shadow: rgba(0, 0, 0, 0.45);
+
+  /* Espaçamento */
+  --ms-space-1: 4px;
+  --ms-space-2: 8px;
+  --ms-space-3: 12px;
+  --ms-space-4: 16px;
+  --ms-space-5: 20px;
+  --ms-space-6: 24px;
+
+  /* Raios */
+  --ms-radius-sm: 8px;
+  --ms-radius-md: 12px;
+  --ms-radius-lg: 18px;
+  --ms-radius-pill: 999px;
+
+  /* Elevação */
+  --ms-shadow-panel: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ms-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.28);
+
+  /* Tipografia */
+  --ms-font: 'Google Sans', 'Roboto', 'Arial', sans-serif;
+  --ms-font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* Wordmark MeetSync — Quicksand com fallback arredondado (fontes externas bloqueadas pela CSP do Meet) */
+  --ms-font-wordmark: 'Quicksand', 'Trebuchet MS', 'Segoe UI', var(--ms-font);
+  --ms-fs-sm: 11px;
+  --ms-fs-base: 13px;
+  --ms-fs-secondary: 12px;
+  --ms-fs-title: 15px;
+}
