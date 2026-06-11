@@ -142,15 +142,14 @@ function renderMarkdownInto(container: HTMLElement, text: string, cursor = false
       continue;
     }
     list = null;
-    // "## N. Título" ou "N. Título" → chip numerado
-    const numbered = line.match(/^(?:#{1,6}\s+)?(\d+)[.)]\s+\*{0,2}(.+?)\*{0,2}:?\s*$/);
+    // "N. texto" (com ou sem ##) → item numerado, com negrito inline preservado
+    const numbered = line.match(/^(?:#{1,6}\s+)?(\d+)[.)]\s+(.+)$/);
     if (numbered) {
-      container.append(
-        el('div', { class: 'ms-sum-h-num' }, [
-          el('span', { class: 'ms-sum-num', text: numbered[1]! }),
-          el('span', { class: 'ms-sum-h-text', text: numbered[2]! }),
-        ]),
-      );
+      const item = el('div', { class: 'ms-sum-numitem' }, [el('span', { class: 'ms-sum-num', text: numbered[1]! })]);
+      const t = el('span', { class: 'ms-sum-numitem-text' });
+      appendInline(t, numbered[2]!);
+      item.append(t);
+      container.append(item);
       continue;
     }
     // "## Título" ou "**Título**" → rótulo de seção
@@ -623,6 +622,7 @@ export class Panel {
   // ---------- Resumo: status + conteúdo ----------
   private rtKey = '';
   private rtTextEl: HTMLElement | null = null;
+  private rtModelEl: HTMLElement | null = null;
   private renderRtStatus() {
     const s = store.get();
     const active = s.settings.realtimeSummary && this.ollamaReady(s) && s.inMeeting;
@@ -652,13 +652,19 @@ export class Panel {
       if (icon === 'none') {
         this.summaryStatus.replaceChildren();
         this.rtTextEl = null;
+        this.rtModelEl = null;
       } else {
         const ic = icon === 'spinner' ? el('span', { class: 'ms-spinner' }) : el('span', { class: 'ms-status-dot ms-pulse-blue' });
         this.rtTextEl = el('span', { text });
-        this.summaryStatus.replaceChildren(ic, this.rtTextEl);
+        this.rtModelEl = el('span', { class: 'ms-sum-model' });
+        this.summaryStatus.replaceChildren(ic, this.rtTextEl, this.rtModelEl);
       }
     } else if (this.rtTextEl && this.rtTextEl.textContent !== text) {
       this.rtTextEl.textContent = text;
+    }
+    if (this.rtModelEl) {
+      const model = s.settings.ollamaModel ?? '';
+      if (this.rtModelEl.textContent !== model) this.rtModelEl.textContent = model;
     }
     if (this.summaryStatus.className !== cls) this.summaryStatus.className = cls;
   }

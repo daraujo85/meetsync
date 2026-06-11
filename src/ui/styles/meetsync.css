@@ -731,6 +731,11 @@ button {
 .ms-sum-h-num:first-child { margin-top: 0; }
 .ms-sum-num { width: 22px; height: 22px; border-radius: 7px; flex: none; background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
 .ms-sum-h-text { font-size: 13px; font-weight: 600; color: var(--ms-text-primary); }
+.ms-sum-numitem { display: flex; gap: 9px; margin: 7px 0; font-size: 13px; color: var(--ms-text-secondary); line-height: 1.5; }
+.ms-sum-numitem .ms-sum-num { margin-top: 1px; }
+.ms-sum-numitem-text { flex: 1; min-width: 0; }
+.ms-sum-numitem-text strong { color: var(--ms-text-primary); font-weight: 600; }
+.ms-sum-model { margin-left: auto; padding-left: 10px; font-family: var(--ms-font-mono); font-size: 11px; color: var(--ms-text-muted); white-space: nowrap; }
 .ms-cursor { display: inline-block; width: 8px; height: 15px; background: var(--ms-accent-blue); margin-left: 1px; vertical-align: -2px; border-radius: 1px; animation: ms-pulse-dot 1s steps(2, end) infinite; }
 
 /* chat: balão + tag + tempo à direita */
