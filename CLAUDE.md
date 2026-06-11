@@ -10,20 +10,28 @@ npm run dev        # Vite dev build with HMR, writes to dist/ (load dist/ unpack
 npm run build      # tsc --noEmit (type-check) + vite build → dist/
 npm run zip        # package dist/ into meetsync-<version>.zip (requires built dist/)
 npm run package    # build + zip
-node scripts/gen-icons.mjs   # regenerate placeholder PNG icons in public/icons
 ```
 
 There is no test suite. `npm run build` is the gate: it must pass `tsc --noEmit` (strict) before bundling.
 
 Loading the extension: `chrome://extensions` → enable Developer mode → "Load unpacked" → select `dist/`.
 
+**Icons:** `public/icons/icon-{16,32,48,128}.png` are rasterized from SVG via **headless Chromium** (crisp at exact sizes). 16/32/48 use a bold simplified glyph (`mark-small.svg`); 128 uses the full mark (`meetsync-mark.svg`). Do NOT use `scripts/gen-icons.mjs` (placeholder "M" generator) or `qlmanage` (adds margin / blurs). To regenerate, render the SVG at the target viewport size with Playwright/Chromium and screenshot.
+
 ## What this is
 
 MeetSync is a **Manifest V3 Chrome extension** for Google Meet that scrapes the captions Meet already
-renders (it never touches audio), shows them as a chat, and exports the meeting to `.txt` — with optional
-AI correction/summary via a user-configured **Ollama** server. Internal tool, no Web Store, vanilla
-TypeScript (no UI framework). `PRD.md` is the full product spec; requirements are referenced in code
-comments as `RF-###` / `RNF-###`.
+renders (it never touches audio), shows them as a chat, and exports the meeting to `.txt`/`.json` — with
+optional AI correction/summary via a user-configured **Ollama** server. Vanilla TypeScript (no UI
+framework). `PRD.md` is the full product spec; requirements are referenced in code comments as
+`RF-###` / `RNF-###`.
+
+Being published to the **Chrome Web Store** (repo: github.com/daraujo85/meetsync, branch `master`).
+Publishing assets live in the repo: `docs/privacy.html` (privacy policy, served via GitHub Pages at
+`daraujo85.github.io/meetsync/privacy.html`), `STORE_LISTING.md` (copy-paste listing text + permission
+justifications), `store-assets/` (1280×800 screenshots + promo tiles, JPEG no-alpha), `releases/*.zip`.
+For the store: `package.json` description must stay ≤132 chars, and permissions are kept minimal (no
+wildcard host perms — only `meet.google.com` + `localhost`/`127.0.0.1`).
 
 ## Architecture (the parts that span files)
 
@@ -41,11 +49,14 @@ Three Chrome execution contexts, wired in `src/content/content-script.ts` (the b
 
 `src/services/store.ts` is the single source of truth: a hand-rolled pub/sub `store` (no framework).
 Capture modules and async actions write to it; `Panel` subscribes in `panel.ts` and patches the DOM. The
-meeting transcript lives **in memory only** and is reset on meeting change (`resetSession`); only
-`UserSettings` is persisted, via `storage-service.ts` → `chrome.storage.local`.
+meeting transcript lives **in memory only**; only `UserSettings` is persisted, via `storage-service.ts`
+→ `chrome.storage.local`.
 
 `MeetDetector` (`meet-detector.ts`) fires `onJoined`/`onLeft` (patches `history.pushState` for the SPA +
-MutationObserver + poll). On join → `store.startSession` + `CaptionCapture.start()` + auto-enable captions.
+MutationObserver + poll). On join → `store.startSession` + `CaptionCapture.start()`/`ChatCapture.start()`
++ auto-enable captions. On leave → `store.endSession()` keeps the transcript visible (state `ended:true`,
+panel stays open so the user can review/download after the meeting); the transcript is only cleared by
+`resetSession()` when a **new** meeting starts.
 
 ### Caption + chat capture — the fragile, isolated core
 
