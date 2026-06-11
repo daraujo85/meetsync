@@ -11,22 +11,31 @@ function formatDate(iso?: string): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-const CORRECTION_PROMPT = `Você receberá uma transcrição capturada automaticamente do Google Meet.
-Corrija erros de reconhecimento, pontuação e quebras de frase, preservando fielmente o sentido original.
+const CORRECTION_PROMPT = `Você receberá uma transcrição capturada automaticamente do Google Meet (legendas).
+Corrija erros de reconhecimento de fala, pontuação e quebras de frase, preservando fielmente o sentido.
 
 Regras:
-- Não invente informações.
-- Não remova falas relevantes.
-- Não altere nomes dos participantes.
-- Preserve os horários quando existirem.
-- Corrija apenas erros claros de transcrição.
-- Mantenha o texto em português do Brasil.
-- Mantenha exatamente o mesmo formato de cada linha: [HH:MM] Nome: texto.
+- Não invente informações nem remova falas relevantes.
+- NÃO altere o NOME DO PARTICIPANTE que aparece antes dos dois-pontos (o "Nome:" de cada linha). Corrija apenas o TEXTO falado.
+- Preserve os horários [HH:MM] e o formato de cada linha: [HH:MM] Nome: texto.
+- Mantenha o português do Brasil.
+
+Corrija com atenção especial a NOMES DE PRODUTOS, MARCAS, FERRAMENTAS E TERMOS TÉCNICOS que a
+transcrição automática costuma aportuguesar ou escrever errado — especialmente termos em inglês
+ouvidos como palavras em português. Use a grafia oficial correta. Exemplos do tipo de erro a corrigir:
+- "Cláudio Code" / "Cláudio Código" / "Cláudio" (no contexto de IA/código) → "Claude Code" / "Claude"
+- "guité" / "guírrabe" → "Git" / "GitHub"
+- "paitão" → "Python";  "javascripti" → "JavaScript";  "ó lama" / "olama" → "Ollama"
+- "vsicode" / "VS code" → "VS Code";  "no js" → "Node.js";  "react" → "React"
+Use o CONTEXTO da conversa (assuntos técnicos, dev, IA) para inferir o termo correto. Quando o termo
+claramente se refere a um produto/tecnologia conhecido, prefira a grafia oficial dele.
+
+Contexto da reunião (use para entender o tema e desambiguar termos):
+{{MEETING_METADATA}}
 
 IMPORTANTE — formato da resposta:
-- Responda APENAS com a transcrição corrigida.
-- NÃO inclua preâmbulo, saudação, comentários ou conclusão.
-- NÃO explique o que foi corrigido nem liste alterações.
+- Responda APENAS com a transcrição corrigida, nada além disso.
+- NÃO inclua preâmbulo, saudação, comentários, conclusão nem lista de alterações.
 - NÃO adicione títulos, observações, notas de rodapé ou marcações de markdown.
 - A primeira linha da sua resposta já deve ser a primeira linha da transcrição.
 
@@ -73,7 +82,10 @@ export async function correctTranscript(
   url: string,
   model: string,
 ): Promise<string> {
-  const prompt = CORRECTION_PROMPT.replace('{{TRANSCRIPT}}', buildTranscriptBody(session));
+  const prompt = CORRECTION_PROMPT.replace('{{MEETING_METADATA}}', meetingMetadata(session)).replace(
+    '{{TRANSCRIPT}}',
+    buildTranscriptBody(session),
+  );
   return ollama.generate(url, model, prompt);
 }
 
