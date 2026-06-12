@@ -17,10 +17,15 @@ O MeetSync captura automaticamente as legendas e as mensagens de chat exibidas p
 Recursos:
 • Barra discreta e painel em Dark Mode, integrados ao visual do Meet (e arrastáveis).
 • Liga as legendas automaticamente e captura enquanto estiverem ativas; pausa/retoma com elas.
-• Histórico em formato de chat: quem falou, quando e o quê, com avatares e links clicáveis.
-• Mensagens do chat de texto entram intercaladas na transcrição.
+• Transcrição em formato de chat: quem falou, quando e o quê, com avatares e links clicáveis.
+• Mensagens do chat de texto entram intercaladas, em ordem cronológica.
+• Alertas de menção: avise-se quando alguém falar seu nome, uma palavra/frase ou (com IA) um assunto de interesse — útil quando você está em outra aba.
+• Histórico de reuniões: biblioteca local com busca para revisitar, baixar e gerenciar transcrições anteriores.
 • Exportação em .txt (com cabeçalho opcional) e .json estruturado para automações/agentes de IA.
 • Resumo/ata e correção da transcrição OPCIONAIS, via um servidor Ollama local que você configura.
+• Vocabulário do negócio: cadastre nomes, produtos e siglas para a IA corrigir palavras mal-transcritas.
+• "Seu nome" aparece no lugar de "Você" na transcrição, exportações e resumos.
+• Rede de segurança: a transcrição é salva localmente e pode ser recuperada se a aba fechar/recarregar.
 • Após a reunião, o painel continua na tela para você revisar e baixar com calma.
 
 Privacidade: os dados ficam no seu navegador. Nada é enviado para servidores externos — exceto, se você ativar a IA, para o endereço do Ollama que você mesmo configurar.
@@ -40,5 +45,7 @@ Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do
 
 ## Screenshots sugeridos (1280×800)
 1. Painel expandido com a aba Transcrição (chat) durante uma reunião.
-2. Aba Resumo com a ata em tempo real.
-3. Aba Exportar (opções + Ollama + prévia).
+2. Aba Alertas (regras monitoradas) + banner de alerta disparado.
+3. Histórico de reuniões (lista) e/ou o detalhe de uma reunião.
+4. Aba Resumo com a ata em tempo real.
+5. Aba Exportar (Vocabulário do negócio + Ollama + prévia).

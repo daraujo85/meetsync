@@ -26,15 +26,22 @@ Em publicação na **Chrome Web Store**. Política de privacidade:
 - Como avisa: **banner in-app** (aparece mesmo com o painel recolhido), **notificação clicável do Chrome** (traz a aba do Meet pra frente), **som** e **sininho** na barra com contador de não-lidos.
 - Ignora as suas próprias falas; botão **"Simular detecção"** para testar.
 
+### Histórico de reuniões
+- **Biblioteca local** de todas as reuniões transcritas (ícone de relógio no header do painel).
+- Lista com **busca** e cards (data, duração, participantes, prévia da 1ª fala, nº de linhas, com/sem ata); **detalhe** com métricas, prévia transcrição/resumo e ações (baixar `.txt`/ata, favoritar, excluir).
+- Acessível também pelo **ícone da toolbar** — dentro ou fora do Meet.
+
 ### Não perder a reunião
-- **Auto-salva** a transcrição localmente durante e ao encerrar a reunião.
-- **Recuperação pelo ícone da toolbar**: se o Meet redirecionar/fechar a aba, o popup mostra **"Última reunião salva → Baixar .txt"**.
+- **Auto-salva** a transcrição localmente durante e ao encerrar a reunião (até 40 no histórico).
+- **Recuperação pelo ícone da toolbar**: se o Meet redirecionar/fechar a aba, o popup mostra **"Última reunião salva → Baixar .txt"** (com IA quando configurada).
 - Bloqueia a navegação enquanto o **download com IA** ainda processa (o "voltar à tela inicial" do Meet não interrompe mais o download).
 - Re-renders/quedas transientes do Meet **não zeram** mais a transcrição.
 
 ### Exportação e IA
 - Exporta **`.txt`** (cabeçalho opcional, cronológico) e **`.json`** estruturado para agentes/automações.
 - **Ollama** (opt-in, local): **correção** da transcrição e **resumo/ata**, inclusive **em tempo real** via streaming (intervalo configurável 1/2/5/10 min).
+- **Vocabulário do negócio**: tags com nomes/produtos/siglas (ex.: Acme, Globex) injetadas nos prompts para corrigir palavras mal-transcritas pelo Google ("acme corp" → "Acme").
+- **Seu nome**: substitui "Você" pelo seu nome real na transcrição, exportações e resumos.
 
 ### Interface
 - Identidade própria (logo + wordmark Meet**Sync**) em **Dark Mode**.
