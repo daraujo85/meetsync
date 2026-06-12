@@ -4,7 +4,7 @@
 import tokensCss from '@/ui/styles/tokens.css?inline';
 import meetsyncCss from '@/ui/styles/meetsync.css?inline';
 import { store } from '@/services/store';
-import { saveMeeting } from '@/services/storage-service';
+import { saveMeeting, consumeOpenHistory } from '@/services/storage-service';
 import { Panel } from '@/ui/panel';
 import { MeetDetector, type MeetingMeta } from './meet-detector';
 import { CaptionCapture } from './caption-capture';
@@ -159,6 +159,11 @@ async function main() {
   keepHostAttached(handle.__host);
   wireToolbarBridge();
   wireMeetingPersistence();
+
+  // Se o popup pediu (fora do Meet) para abrir o histórico, abre agora que a aba carregou.
+  void consumeOpenHistory().then((open) => {
+    if (open) store.patchUi({ review: true, expanded: true, historyOpen: true });
+  });
 
   const detector = new MeetDetector({
     onJoined: (meta: MeetingMeta) => {

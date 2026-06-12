@@ -12,6 +12,7 @@
 // que capturar (a extensão não força a abertura para não atrapalhar o usuário).
 
 import { store } from '@/services/store';
+import { resolveSelfName } from './participant-resolver';
 import type { TranscriptEntry } from '@/types';
 
 const SELECTORS = {
@@ -214,6 +215,7 @@ export class ChatCapture {
     let name = header;
     if (time) name = name.replace(time, '').trim();
     if (!name) name = 'Você'; // mensagens próprias normalmente não mostram o nome
+    name = resolveSelfName(name, store.get().settings.selfName); // "Você" → nome configurado
     return { name, time };
   }
 }

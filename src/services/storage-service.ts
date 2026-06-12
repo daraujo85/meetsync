@@ -10,6 +10,30 @@ const LAST_MEETING_KEY = 'meetsync:lastMeeting'; // legado (0.3.0) — migrado p
 const HISTORY_KEY = 'meetsync:history'; // índice leve (metadados) para a lista
 const MEETING_PREFIX = 'meetsync:meeting:'; // dados completos por reunião
 const HISTORY_CAP = 40; // máximo de reuniões guardadas (poda as mais antigas)
+const OPEN_HISTORY_KEY = 'meetsync:openHistory'; // sinaliza pra aba do Meet abrir o histórico ao carregar
+
+/** Pede que a próxima aba do Meet a carregar abra o histórico (usado pelo popup fora do Meet). */
+export async function requestOpenHistory(): Promise<void> {
+  try {
+    await chrome.storage.local.set({ [OPEN_HISTORY_KEY]: true });
+  } catch {
+    /* ignora */
+  }
+}
+
+/** Consome o sinal de abrir histórico (retorna true uma única vez). */
+export async function consumeOpenHistory(): Promise<boolean> {
+  try {
+    const res = await chrome.storage.local.get(OPEN_HISTORY_KEY);
+    if (res[OPEN_HISTORY_KEY]) {
+      await chrome.storage.local.remove(OPEN_HISTORY_KEY);
+      return true;
+    }
+  } catch {
+    /* ignora */
+  }
+  return false;
+}
 
 /** Dados completos de uma reunião salva. */
 export type SavedMeeting = {
@@ -33,6 +57,8 @@ export type HistoryMeta = {
   participants: string[];
   hasSummary: boolean;
   starred: boolean;
+  /** Prévia da primeira fala (para o card da lista). */
+  preview?: { who: string; text: string };
 };
 
 function metaFromSession(session: MeetingSession, summaryText: string | undefined, savedAt: string, starred: boolean): HistoryMeta {
@@ -40,6 +66,7 @@ function metaFromSession(session: MeetingSession, summaryText: string | undefine
   const end = session.captureEndedAt ?? savedAt;
   let durationMin = 0;
   if (start) durationMin = Math.max(0, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000));
+  const first = [...session.transcript].sort((a, b) => (a.capturedAt < b.capturedAt ? -1 : a.capturedAt > b.capturedAt ? 1 : 0))[0];
   return {
     id: session.id,
     title: session.meetingTitle || session.meetingCode || 'Reunião',
@@ -53,6 +80,7 @@ function metaFromSession(session: MeetingSession, summaryText: string | undefine
     participants: session.participants.map((p) => p.name),
     hasSummary: !!summaryText,
     starred,
+    preview: first ? { who: first.participantName, text: first.text } : undefined,
   };
 }
 

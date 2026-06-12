@@ -29,7 +29,7 @@ ouvidos como palavras em português. Use a grafia oficial correta. Exemplos do t
 - "vsicode" / "VS code" → "VS Code";  "no js" → "Node.js";  "react" → "React"
 Use o CONTEXTO da conversa (assuntos técnicos, dev, IA) para inferir o termo correto. Quando o termo
 claramente se refere a um produto/tecnologia conhecido, prefira a grafia oficial dele.
-
+{{VOCABULARY}}
 Contexto da reunião (use para entender o tema e desambiguar termos):
 {{MEETING_METADATA}}
 
@@ -60,9 +60,19 @@ Regras:
 
 Dados da reunião:
 {{MEETING_METADATA}}
-
+{{VOCABULARY}}
 Transcrição:
 {{TRANSCRIPT}}`;
+
+/** Cláusula de vocabulário do negócio injetada nos prompts (vazia se não houver termos). */
+function vocabularyClause(vocabulary?: string[]): string {
+  const terms = (vocabulary ?? []).map((t) => t.trim()).filter(Boolean);
+  if (!terms.length) return '';
+  return `\nVOCABULÁRIO DO NEGÓCIO — nomes de empresas, produtos e siglas do usuário. A transcrição automática
+do Google costuma escrever esses termos errado (ex.: "acme corp" → "AcmeCorp"). Quando uma palavra do
+texto não fizer sentido e se parecer (fonética ou grafia) com um destes, corrija para a grafia EXATA
+abaixo. Use também para entender o contexto. Termos: ${terms.join(', ')}.\n`;
+}
 
 function meetingMetadata(session: MeetingSession): string {
   return [
@@ -81,19 +91,18 @@ export async function correctTranscript(
   session: MeetingSession,
   url: string,
   model: string,
+  vocabulary?: string[],
 ): Promise<string> {
-  const prompt = CORRECTION_PROMPT.replace('{{MEETING_METADATA}}', meetingMetadata(session)).replace(
-    '{{TRANSCRIPT}}',
-    buildTranscriptBody(session),
-  );
+  const prompt = CORRECTION_PROMPT.replace('{{VOCABULARY}}', vocabularyClause(vocabulary))
+    .replace('{{MEETING_METADATA}}', meetingMetadata(session))
+    .replace('{{TRANSCRIPT}}', buildTranscriptBody(session));
   return ollama.generate(url, model, prompt);
 }
 
-function summaryPrompt(session: MeetingSession): string {
-  return SUMMARY_PROMPT.replace('{{MEETING_METADATA}}', meetingMetadata(session)).replace(
-    '{{TRANSCRIPT}}',
-    buildTranscriptBody(session),
-  );
+function summaryPrompt(session: MeetingSession, vocabulary?: string[]): string {
+  return SUMMARY_PROMPT.replace('{{VOCABULARY}}', vocabularyClause(vocabulary))
+    .replace('{{MEETING_METADATA}}', meetingMetadata(session))
+    .replace('{{TRANSCRIPT}}', buildTranscriptBody(session));
 }
 
 /** Gera resumo/ata (RF-095..099). */
@@ -101,8 +110,9 @@ export async function summarizeMeeting(
   session: MeetingSession,
   url: string,
   model: string,
+  vocabulary?: string[],
 ): Promise<string> {
-  return ollama.generate(url, model, summaryPrompt(session));
+  return ollama.generate(url, model, summaryPrompt(session, vocabulary));
 }
 
 /** Gera resumo/ata com streaming: onChunk recebe o texto acumulado a cada pedaço. */
@@ -111,6 +121,7 @@ export async function summarizeMeetingStream(
   url: string,
   model: string,
   onChunk: (accumulated: string) => void,
+  vocabulary?: string[],
 ): Promise<string> {
-  return ollama.generateStream(url, model, summaryPrompt(session), onChunk);
+  return ollama.generateStream(url, model, summaryPrompt(session, vocabulary), onChunk);
 }

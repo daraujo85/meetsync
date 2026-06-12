@@ -57,12 +57,6 @@ function avatarColor(name: string): string {
 // ---- helpers do histórico ----
 const MONTHS_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
-function fmtDateShort(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  return `${d.getDate()} ${MONTHS_ABBR[d.getMonth()]}`;
-}
-
 function fmtFullDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
@@ -309,6 +303,12 @@ export class Panel {
   private tgSummary!: ReturnType<typeof toggleRow>;
   private tgSeparate!: ReturnType<typeof toggleRow>;
   private tgJson!: ReturnType<typeof toggleRow>;
+  private selfNameInput!: HTMLInputElement;
+  // vocabulário do negócio
+  private vocabWrap!: HTMLElement;
+  private vocabInput!: HTMLInputElement;
+  private vocabNote!: HTMLElement;
+  private lastVocabSig = ' ';
   private ollamaUrlInput!: HTMLInputElement;
   private modelPills!: HTMLElement;
   private ollamaStatusEl!: HTMLElement;
@@ -378,7 +378,7 @@ export class Panel {
     dlBtn.addEventListener('click', () => this.quickDownload());
 
     // Sininho de alertas (abre a aba Alertas; mostra estado de arme + não-lidos).
-    this.bellIcon = el('span', { class: 'ms-bell-ico', html: icons.bellOff });
+    this.bellIcon = el('span', { class: 'ms-bell-ico', html: icons.ear });
     this.bellBadge = el('span', { class: 'ms-bell-badge ms-hidden' });
     this.bellBtn = el('button', { class: 'ms-icon-btn ms-bell-btn', title: 'Alertas de menção', 'aria-label': 'Alertas' }, [this.bellIcon, this.bellBadge]) as HTMLButtonElement;
     this.bellBtn.addEventListener('click', () => { store.patchUi({ expanded: true, activeTab: 'alerts' }); store.clearAlertUnread(); });
@@ -777,6 +777,30 @@ export class Panel {
     this.ollamaStatusEl = el('div', { class: 'ms-status is-idle' });
     this.modelPills = el('div', { class: 'ms-pill-group ms-pill-wrap' });
 
+    // Vocabulário do negócio (termos injetados nos prompts de correção/resumo).
+    this.vocabInput = el('input', { class: 'ms-input', type: 'text', placeholder: 'ex.: Acme, Globex, OKRs…', 'aria-label': 'Novo termo' }) as HTMLInputElement;
+    const vocabAdd = el('button', { class: 'ms-btn ms-btn-secondary ms-btn-sm', type: 'button' }, [el('span', { class: 'ms-btn-ico', html: icons.plus }), el('span', { text: 'Adicionar' })]);
+    const addVocab = () => {
+      const terms = this.vocabInput.value.split(',').map((t) => t.trim()).filter(Boolean);
+      if (!terms.length) return;
+      const merged = [...store.get().settings.vocabulary];
+      for (const t of terms) if (!merged.some((x) => x.toLowerCase() === t.toLowerCase())) merged.push(t);
+      void store.updateSettings({ vocabulary: merged });
+      this.vocabInput.value = '';
+      this.vocabInput.focus();
+    };
+    vocabAdd.addEventListener('click', addVocab);
+    this.vocabInput.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); addVocab(); } });
+    this.vocabWrap = el('div', { class: 'ms-vocab-chips' });
+    this.vocabNote = el('div', { class: 'ms-vocab-note' });
+    const vocabSection = el('div', { class: 'ms-section' }, [
+      this.sectionLabel('Vocabulário do negócio', icons.tag),
+      el('div', { class: 'ms-vocab-desc', html: 'Nomes de empresas, produtos e siglas do seu dia a dia. A IA usa esta lista para corrigir palavras que a transcrição do Google escreveu errado — ex.: <span class="ms-vocab-ex">"acme corp" → "Acme"</span>.' }),
+      this.vocabWrap,
+      el('div', { class: 'ms-row-gap ms-mt-2' }, [el('div', { class: 'ms-grow' }, [this.vocabInput]), vocabAdd]),
+      this.vocabNote,
+    ]);
+
     const ollamaSection = el('div', { class: 'ms-section' }, [
       this.sectionLabel('Integração Ollama', icons.sync),
       el('label', { class: 'ms-label', text: 'URL do servidor' }),
@@ -806,14 +830,55 @@ export class Panel {
       this.previewName,
     ]);
 
+    // "Seu nome": substitui "Você" na transcrição/exportações/resumos.
+    this.selfNameInput = el('input', { class: 'ms-input', type: 'text', placeholder: 'ex.: Diego Araújo', 'aria-label': 'Seu nome' }) as HTMLInputElement;
+    this.selfNameInput.addEventListener('change', () => void store.updateSettings({ selfName: this.selfNameInput.value.trim() }));
+    const selfNameField = el('div', { class: 'ms-section' }, [
+      this.sectionLabel('Seu nome', icons.people),
+      this.selfNameInput,
+      el('div', { class: 'ms-vocab-desc ms-mt-2', text: 'Aparece no lugar de “Você” na transcrição, nas exportações e nos resumos.' }),
+    ]);
+
     const scroll = el('div', { class: 'ms-tabpanel ms-scroll' }, [
       el('div', { class: 'ms-section' }, [this.sectionLabel('Preferências de captura', icons.clock), this.tgAutoStart.root, this.tgAutoChat.root]),
+      selfNameField,
       el('div', { class: 'ms-section' }, [this.sectionLabel('Opções de exportação', icons.settings), this.tgHeader.root, this.tgCorrect.root, this.tgSummary.root, this.tgSeparate.root, this.tgJson.root]),
+      vocabSection,
       ollamaSection,
       previewSection,
     ]);
     this.tabPanels.set('export', scroll);
     return scroll;
+  }
+
+  private renderVocab(s: AppState) {
+    const vocab = s.settings.vocabulary;
+    const active = (s.settings.enableAiCorrection || s.settings.includeSummary) && this.ollamaReady(s);
+    this.vocabNote.className = 'ms-vocab-note' + (active ? ' is-active' : '');
+    this.vocabNote.replaceChildren(
+      el('span', { class: 'ms-note-ico', html: active ? icons.checkCircle : icons.info }),
+      el('span', {
+        text: active
+          ? `Será aplicado na correção da transcrição e no resumo (${vocab.length} ${vocab.length === 1 ? 'termo' : 'termos'}).`
+          : 'Aplicado automaticamente quando “Corrigir com IA” ou o resumo estiverem ativos.',
+      }),
+    );
+    const sig = vocab.join('');
+    if (sig === this.lastVocabSig) return;
+    this.lastVocabSig = sig;
+    if (!vocab.length) {
+      this.vocabWrap.replaceChildren(el('div', { class: 'ms-vocab-empty', text: 'Nenhum termo ainda. Adicione abaixo.' }));
+      return;
+    }
+    this.vocabWrap.replaceChildren(
+      ...vocab.map((t) => {
+        const chip = el('span', { class: 'ms-vocab-chip' }, [el('span', { text: t })]);
+        const x = el('button', { class: 'ms-vocab-x', type: 'button', 'aria-label': `Remover ${t}`, title: 'Remover', html: icons.close });
+        x.addEventListener('click', () => void store.updateSettings({ vocabulary: store.get().settings.vocabulary.filter((v) => v !== t) }));
+        chip.append(x);
+        return chip;
+      }),
+    );
   }
 
   // ---------- aba Upload (beta travada) ----------
@@ -957,7 +1022,11 @@ export class Panel {
     const list = this.histMetas.filter(
       (m) => !q || m.title.toLowerCase().includes(q) || m.participants.some((p) => p.toLowerCase().includes(q)),
     );
-    this.histCount.textContent = String(this.histMetas.length);
+    const n = this.histMetas.length;
+    this.histCount.replaceChildren(
+      el('span', { class: 'ms-hist-count-ico', html: icons.history }),
+      el('span', { text: `${n} ${n === 1 ? 'reunião' : 'reuniões'}` }),
+    );
     if (!list.length) {
       this.histList.replaceChildren(
         el('div', { class: 'ms-hist-empty' }, [
@@ -971,25 +1040,49 @@ export class Panel {
   }
 
   private historyCard(m: HistoryMeta): HTMLElement {
+    const when = m.startISO ?? m.savedAt;
+    const d = new Date(when);
+    const dateTile = el('div', { class: 'ms-hist-tile' }, [
+      el('span', { class: 'ms-hist-tile-day', text: isNaN(d.getTime()) ? '–' : String(d.getDate()) }),
+      el('span', { class: 'ms-hist-tile-mon', text: isNaN(d.getTime()) ? '' : MONTHS_ABBR[d.getMonth()]! }),
+    ]);
+
     const titleRow = el('div', { class: 'ms-hist-c-titlerow' }, [
       ...(m.starred ? [el('span', { class: 'ms-hist-star', html: icons.starFill })] : []),
       el('span', { class: 'ms-hist-c-title', text: m.title }),
     ]);
-    const metaRow = el('div', { class: 'ms-hist-c-meta' }, [
-      el('span', { class: 'ms-hist-c-mi' }, [el('span', { class: 'ms-hist-mi-ico', html: icons.calendar }), el('span', { text: fmtDateShort(m.startISO ?? m.savedAt) })]),
-      el('span', { class: 'ms-hist-c-mi' }, [el('span', { class: 'ms-hist-mi-ico', html: icons.clock }), el('span', { text: fmtDuration(m.durationMin) })]),
+    const timeText = m.startISO
+      ? `${formatTime(m.startISO)}${m.endISO ? '–' + formatTime(m.endISO) : ''} · ${fmtDuration(m.durationMin)}`
+      : fmtDuration(m.durationMin);
+    const timeRow = el('div', { class: 'ms-hist-c-meta' }, [
+      el('span', { class: 'ms-hist-mi-ico', html: icons.clock }),
+      el('span', { text: timeText }),
     ]);
     const top = el('div', { class: 'ms-hist-c-top' }, [
-      el('div', { class: 'ms-hist-c-left' }, [titleRow, metaRow]),
+      dateTile,
+      el('div', { class: 'ms-hist-c-left' }, [titleRow, timeRow]),
       avatarStack(m.participants, 4),
     ]);
-    const chips = el('div', { class: 'ms-hist-c-chips' }, [
-      metaChip(icons.chatBubble, `${m.lines} linhas`),
-      m.hasSummary ? metaChip(icons.doc, 'Com ata', true) : metaChip(icons.doc, 'Sem ata'),
-      el('span', { class: 'ms-hist-c-spacer' }),
-      metaChip(icons.cloudUp, 'Local'),
-    ]);
-    const card = el('button', { class: 'ms-hist-card', type: 'button' }, [top, chips]);
+
+    const children: Node[] = [top];
+    if (m.preview) {
+      children.push(
+        el('div', { class: 'ms-hist-c-preview' }, [
+          el('span', { class: 'ms-hist-c-pwho', text: `${m.preview.who.split(' ')[0]}:` }),
+          el('span', { text: ` ${m.preview.text}` }),
+        ]),
+      );
+    }
+    children.push(
+      el('div', { class: 'ms-hist-c-chips' }, [
+        metaChip(icons.chatBubble, `${m.lines} ${m.lines === 1 ? 'linha' : 'linhas'}`),
+        m.hasSummary ? metaChip(icons.doc, 'Com ata', true) : metaChip(icons.doc, 'Sem ata'),
+        el('span', { class: 'ms-hist-c-spacer' }),
+        metaChip(icons.cloudUp, 'Local'),
+      ]),
+    );
+
+    const card = el('button', { class: 'ms-hist-card', type: 'button' }, children);
     card.addEventListener('click', () => void this.openDetail(m));
     return card;
   }
@@ -1001,7 +1094,7 @@ export class Panel {
     const summaryText = saved.summaryText;
 
     const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: 'Voltar', 'aria-label': 'Voltar', html: icons.chevronLeft });
-    back.addEventListener('click', () => { this.histDetailView.classList.add('ms-hidden'); this.histListView.classList.remove('ms-hidden'); });
+    back.addEventListener('click', () => { this.renderHistoryList(); this.histDetailView.classList.add('ms-hidden'); this.histListView.classList.remove('ms-hidden'); });
 
     const star = el('button', { class: 'ms-icon-btn ms-icon-btn-sm ms-hist-d-star' + (m.starred ? ' is-on' : ''), type: 'button', title: 'Favoritar', 'aria-label': 'Favoritar', html: m.starred ? icons.starFill : icons.star });
     star.addEventListener('click', () => void (async () => {
@@ -1161,12 +1254,14 @@ export class Panel {
     this.tgSummary.setOn(s.settings.includeSummary); this.tgSummary.setDisabled(!ready); this.tgSummary.setNote(ready ? null : 'Requer Ollama configurado e modelo selecionado.');
     this.tgSeparate.setOn(s.settings.separateSummaryFile); this.tgSeparate.setDisabled(!ready || !s.settings.includeSummary); this.tgSeparate.setNote(!ready ? 'Requer Ollama configurado.' : (!s.settings.includeSummary ? 'Ative “Incluir resumo / ata” primeiro.' : null));
     this.tgJson.setOn(s.settings.exportJson);
+    if (document.activeElement !== this.selfNameInput && this.selfNameInput.value !== s.settings.selfName) this.selfNameInput.value = s.settings.selfName;
+    this.renderVocab(s);
 
     // Alertas de menção — barra de arme, som, regras, recentes
     const armed = s.settings.alertsArmed;
     this.tgArmed.setOn(armed);
     this.armCard.classList.toggle('is-armed', armed);
-    this.armIcon.innerHTML = icons[armed ? 'ear' : 'bellOff'];
+    this.armIcon.innerHTML = icons.ear;
     this.armSub.textContent = armed ? 'Ouvindo · você será avisado mesmo distraído' : 'Pausado · nenhum alerta será disparado';
     this.tgSound.setOn(s.settings.alertSound);
     this.tgSound.setDisabled(!armed);
@@ -1176,7 +1271,7 @@ export class Panel {
 
     // Banner + sininho da barra compacta
     this.updateOverlay(s);
-    this.bellIcon.innerHTML = icons[armed ? 'bell' : 'bellOff'];
+    this.bellIcon.innerHTML = icons.ear;
     this.bellBtn.classList.toggle('is-armed', armed);
     this.bellBtn.classList.toggle('has-alert', s.alerts.unread > 0);
     this.bellBadge.classList.toggle('ms-hidden', s.alerts.unread === 0);
@@ -1428,11 +1523,11 @@ export class Panel {
       if ((settings.enableAiCorrection || settings.includeSummary) && ready) store.setCaptureStatus('processing');
 
       if (settings.enableAiCorrection && ready) {
-        try { correctedText = await correctTranscript(session, settings.ollamaUrl, settings.ollamaModel!); corrected = true; }
+        try { correctedText = await correctTranscript(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); corrected = true; }
         catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: `Correção falhou: ${err instanceof Error ? err.message : String(err)}` }); }
       }
       if (settings.includeSummary && ready) {
-        try { summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!); store.patchUi({ summaryText }); }
+        try { summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); store.patchUi({ summaryText }); }
         catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: `Resumo falhou: ${err instanceof Error ? err.message : String(err)}` }); }
       }
 
@@ -1499,7 +1594,7 @@ export class Panel {
     this.lastRtSig = this.transcriptSig(s);
     store.patchUi({ summarizing: true });
     try {
-      const text = await summarizeMeetingStream(s.session, s.settings.ollamaUrl, s.settings.ollamaModel!, (acc) => store.patchUi({ summaryText: acc }));
+      const text = await summarizeMeetingStream(s.session, s.settings.ollamaUrl, s.settings.ollamaModel!, (acc) => store.patchUi({ summaryText: acc }), s.settings.vocabulary);
       store.patchUi({ summaryText: text, summarizing: false });
     } catch {
       store.patchUi({ summarizing: false });

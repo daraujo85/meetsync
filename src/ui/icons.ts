@@ -1,10 +1,11 @@
 // Ícones SVG (paths do Material Symbols), renderizados via innerHTML dentro do Shadow DOM.
 const wrap = (path: string) =>
-  `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;
+  `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="${path}"/></svg>`;
 
 // Ícones de traço (line icons do mockup da aba Alertas) e de preenchimento.
+// `style="fill:none"` (inline) vence regras CSS de `fill: currentColor` (que encheriam o traço).
 const stroke = (inner: string) =>
-  `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+  `<svg viewBox="0 0 24 24" aria-hidden="true" style="fill:none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
 const solid = (inner: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${inner}</svg>`;
 
 export const icons = {
@@ -30,6 +31,7 @@ export const icons = {
   starFill: solid('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'),
   people: stroke('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0111 0M16 6.2a3 3 0 010 5.6M21 19a5.5 5.5 0 00-4-5.3"/>'),
   cloudUp: stroke('<path d="M7 18a4.5 4.5 0 01-.5-8.97 6 6 0 0111.64-1.2A4.5 4.5 0 0117.5 18"/><path d="M12 21v-8m0 0l-3 3m3-3l3 3"/>'),
+  tag: stroke('<path d="M3 11.5V5a2 2 0 012-2h6.5L21 12.5a2 2 0 010 2.8l-5.7 5.7a2 2 0 01-2.8 0L3 11.5z"/><circle cx="7.5" cy="7.5" r="1.3"/>'),
   expand: wrap('M15 18l-6-6 6-6v12z'), // chevron-left (abrir painel à esquerda)
   collapse: wrap('M9 6l6 6-6 6V6z'), // chevron-right (recolher)
   chevronLeft: wrap('M15 18l-6-6 6-6v12z'),

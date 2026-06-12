@@ -43,6 +43,9 @@ export type UserSettings = {
   autoOpenChat: boolean;
   /** Também baixa um .json estruturado (para agentes de IA / automações). */
   exportJson: boolean;
+  /** Vocabulário do negócio: termos (empresas/produtos/siglas) injetados nos prompts de IA
+   *  para corrigir palavras mal-transcritas pelo Google (ex.: "acme corp" → "AcmeCorp"). */
+  vocabulary: string[];
 
   // ---- Alertas de menção (avisar quando falarem comigo / de um assunto) ----
   /** "Monitorar a reunião": liga o monitoramento de menções (toggle mestre). */
@@ -113,6 +116,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   summaryIntervalMin: 2,
   autoOpenChat: true,
   exportJson: false,
+  vocabulary: [],
   alertsArmed: false,
   alertSound: true,
   selfName: '',

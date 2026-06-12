@@ -165,6 +165,42 @@ body {
   gap: 8px;
   margin-top: 10px;
 }
+.ms-rec-dl {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.ms-rec-dl-ico {
+  display: inline-flex;
+}
+.ms-rec-dl-ico svg {
+  width: 15px;
+  height: 15px;
+}
+.ms-rec-iconbtn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--ms-line);
+  background: var(--ms-bg-2);
+  color: var(--ms-fg-dim);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ms-rec-iconbtn:hover {
+  background: #34373b;
+  color: var(--ms-fg);
+}
+.ms-rec-iconbtn svg {
+  width: 17px;
+  height: 17px;
+}
 .ms-btn-sm {
   padding: 6px 12px;
   font-size: 12px;

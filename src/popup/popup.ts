@@ -5,7 +5,8 @@
 // via chrome.tabs.sendMessage para ler o status e alternar o painel.
 
 import { MS_MARK_URL } from '@/ui/logo';
-import { loadHistory, loadMeeting, loadSettings, type HistoryMeta } from '@/services/storage-service';
+import { icons } from '@/ui/icons';
+import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, type HistoryMeta } from '@/services/storage-service';
 import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, downloadText } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting } from '@/services/summary-service';
 import type { UserSettings } from '@/types';
@@ -93,10 +94,10 @@ async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
     let correctedText = '';
     let summaryText = saved.summaryText;
     if (s.enableAiCorrection) {
-      try { correctedText = await correctTranscript(session, s.ollamaUrl, s.ollamaModel!); corrected = true; } catch { /* mantém bruto */ }
+      try { correctedText = await correctTranscript(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary); corrected = true; } catch { /* mantém bruto */ }
     }
     if (s.includeSummary && !summaryText) {
-      try { summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!); } catch { /* sem ata */ }
+      try { summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary); } catch { /* sem ata */ }
     }
     const inlineSummary = !!summaryText && !s.separateSummaryFile;
     const main = corrected
@@ -124,6 +125,46 @@ function formatWhen(iso: string): string {
   }
 }
 
+/** Abre o painel de histórico — funciona igual dentro ou fora do meet.google.com. */
+async function openHistoryPanel() {
+  if (activeIsMeet && activeTabId !== undefined) {
+    const tabId = activeTabId;
+    chrome.tabs.sendMessage(tabId, { type: 'meetsync:open-history' }, () => {
+      if (chrome.runtime.lastError) {
+        // Content script ausente (aba aberta antes de um reload da extensão): recarrega com o
+        // sinal para abrir o histórico assim que carregar. Seguro aqui — só caímos neste card
+        // fora de uma reunião ativa, então recarregar não derruba ninguém de uma chamada.
+        void requestOpenHistory().then(() => chrome.tabs.reload(tabId));
+      }
+      window.close();
+    });
+    return;
+  }
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
+    const meetTab = tabs.find((t) => t.id !== undefined);
+    if (meetTab?.id !== undefined) {
+      await chrome.tabs.update(meetTab.id, { active: true });
+      if (meetTab.windowId !== undefined) await chrome.windows.update(meetTab.windowId, { focused: true });
+      chrome.tabs.sendMessage(meetTab.id, { type: 'meetsync:open-history' }, () => void chrome.runtime.lastError);
+    } else {
+      await requestOpenHistory();
+      await chrome.tabs.create({ url: MEET_URL });
+    }
+  } catch {
+    await requestOpenHistory();
+    void chrome.tabs.create({ url: MEET_URL });
+  }
+  window.close();
+}
+
+/** Botão só-ícone com tooltip (title). */
+function iconBtn(iconHtml: string, title: string, onClick: () => void): HTMLButtonElement {
+  const b = el('button', { class: 'ms-rec-iconbtn', type: 'button', title, 'aria-label': title, html: iconHtml }) as HTMLButtonElement;
+  b.addEventListener('click', onClick);
+  return b;
+}
+
 /** Card do histórico: última reunião salva (baixar) + atalho para abrir o histórico completo. */
 function recoveryCard(): HTMLElement | null {
   if (!history.length) return null;
@@ -136,34 +177,27 @@ function recoveryCard(): HTMLElement | null {
     })();
   };
 
-  const actions: (Node | string)[] = [];
-  if (aiReady()) {
-    // Com IA configurada: botão primário "com IA" + atalho para o .txt bruto (igual ao painel).
-    const dlAi = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt com IA' }) as HTMLButtonElement;
-    dlAi.addEventListener('click', () => void downloadWithAi(last, dlAi));
-    const dlRaw = el('button', { class: 'ms-rec-discard', type: 'button', text: 'Sem IA' });
-    dlRaw.addEventListener('click', downloadRaw);
-    actions.push(dlAi, dlRaw);
-  } else {
-    const dl = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt' });
-    dl.addEventListener('click', downloadRaw);
-    actions.push(dl);
-  }
+  const ai = aiReady();
+  const actions: Node[] = [];
 
-  if (activeIsMeet && activeTabId !== undefined) {
-    const open = el('button', { class: 'ms-rec-discard', type: 'button', text: `Ver histórico (${history.length})` });
-    open.addEventListener('click', () => {
-      chrome.tabs.sendMessage(activeTabId!, { type: 'meetsync:open-history' }, () => void chrome.runtime.lastError);
-      window.close();
-    });
-    actions.push(open);
-  }
+  // Download principal (labeled). Com IA configurada, baixa com correção/resumo.
+  const primary = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm ms-rec-dl', type: 'button', title: ai ? 'Baixar .txt com IA (correção + resumo)' : 'Baixar transcrição (.txt)' }, [
+    el('span', { class: 'ms-rec-dl-ico', html: icons.download }),
+    el('span', { text: ai ? 'Baixar com IA' : 'Baixar .txt' }),
+  ]) as HTMLButtonElement;
+  primary.addEventListener('click', () => (ai ? void downloadWithAi(last, primary) : downloadRaw()));
+  actions.push(primary);
+
+  // Sem IA (só-ícone) quando a IA está ligada.
+  if (ai) actions.push(iconBtn(icons.doc, 'Baixar .txt sem IA', downloadRaw));
+
+  // Abrir histórico (só-ícone) — sempre disponível, dentro ou fora do Meet.
+  actions.push(iconBtn(icons.history, `Abrir histórico de reuniões (${history.length})`, () => void openHistoryPanel()));
 
   return el('div', { class: 'ms-pop-recovery' }, [
     el('div', { class: 'ms-rec-title', text: 'Última reunião salva' }),
     el('div', { class: 'ms-rec-sub', text: `${last.title} · ${last.lines} fala(s) · ${formatWhen(last.savedAt)}` }),
     el('div', { class: 'ms-rec-actions' }, actions),
-    ...(activeIsMeet ? [] : [el('div', { class: 'ms-rec-hint', text: `${history.length} reunião(ões) no histórico — abra o Google Meet para revisar todas.` })]),
   ]);
 }
 

@@ -2,6 +2,15 @@
 // Quando a legenda traz uma <img> de avatar, usamos a src dela. Caso não haja avatar,
 // a UI cai no fallback de iniciais (tratado no componente de chat).
 
+const SELF_RE = /^(você|voce|you)$/i;
+
+/** Substitui o rótulo "Você"/"You" pelo nome configurado pelo usuário (settings.selfName),
+ *  para que a transcrição, exportações, histórico e prompts da IA mostrem o nome real. */
+export function resolveSelfName(name: string, selfName: string): string {
+  const self = selfName.trim();
+  return self && SELF_RE.test(name.trim()) ? self : name;
+}
+
 /** Extrai uma URL de avatar a partir de um nó de legenda, se houver <img> com src http(s). */
 export function avatarFromCaptionRow(row: Element): string | undefined {
   const img = row.querySelector('img');

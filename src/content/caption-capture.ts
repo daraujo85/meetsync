@@ -13,7 +13,7 @@
 
 import { store, cryptoRandomId } from '@/services/store';
 import type { TranscriptEntry } from '@/types';
-import { avatarFromCaptionRow } from './participant-resolver';
+import { avatarFromCaptionRow, resolveSelfName } from './participant-resolver';
 
 // Seletores confirmados ao vivo (Meet PT-BR, jun/2026). O `jsname`/`jscontroller` são os
 // mais estáveis; as classes ofuscadas (a4cQT etc.) ficam como último fallback.
@@ -224,6 +224,8 @@ export class CaptionCapture {
       const parsed = this.parseRow(row);
       if (!parsed || parsed.text.length < MIN_TEXT_LEN) continue;
 
+      // "Você" → nome configurado (resolvido aqui para manter dedup e downstream consistentes).
+      parsed.name = resolveSelfName(parsed.name, store.get().settings.selfName);
       const name = parsed.name || 'Participante';
       let open = this.rowToEntry.get(row);
       const isNewUtterance =
