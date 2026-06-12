@@ -54,6 +54,12 @@ function avatarColor(name: string): string {
   return AVATAR_COLORS[h % AVATAR_COLORS.length]!;
 }
 
+/** Foco ciente de Shadow DOM: `document.activeElement` aponta para o host, não para o input
+ *  dentro do shadow root — use o activeElement do próprio root. */
+function isFocused(el: Element): boolean {
+  return (el.getRootNode() as ShadowRoot | Document).activeElement === el;
+}
+
 // ---- helpers do histórico ----
 const MONTHS_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -831,8 +837,13 @@ export class Panel {
     ]);
 
     // "Seu nome": substitui "Você" na transcrição/exportações/resumos.
-    this.selfNameInput = el('input', { class: 'ms-input', type: 'text', placeholder: 'ex.: Diego Araújo', 'aria-label': 'Seu nome' }) as HTMLInputElement;
-    this.selfNameInput.addEventListener('change', () => void store.updateSettings({ selfName: this.selfNameInput.value.trim() }));
+    this.selfNameInput = el('input', { class: 'ms-input', type: 'text', placeholder: 'ex.: Diego Araujo', 'aria-label': 'Seu nome' }) as HTMLInputElement;
+    this.selfNameInput.addEventListener('change', () => {
+      const v = this.selfNameInput.value.trim();
+      void store.updateSettings({ selfName: v });
+      store.relabelSelf(v); // reaplica às falas já capturadas como "Você"
+      this.lastRtSig = ''; // força regenerar o resumo em tempo real com o nome novo
+    });
     const selfNameField = el('div', { class: 'ms-section' }, [
       this.sectionLabel('Seu nome', icons.people),
       this.selfNameInput,
@@ -1254,7 +1265,7 @@ export class Panel {
     this.tgSummary.setOn(s.settings.includeSummary); this.tgSummary.setDisabled(!ready); this.tgSummary.setNote(ready ? null : 'Requer Ollama configurado e modelo selecionado.');
     this.tgSeparate.setOn(s.settings.separateSummaryFile); this.tgSeparate.setDisabled(!ready || !s.settings.includeSummary); this.tgSeparate.setNote(!ready ? 'Requer Ollama configurado.' : (!s.settings.includeSummary ? 'Ative “Incluir resumo / ata” primeiro.' : null));
     this.tgJson.setOn(s.settings.exportJson);
-    if (document.activeElement !== this.selfNameInput && this.selfNameInput.value !== s.settings.selfName) this.selfNameInput.value = s.settings.selfName;
+    if (!isFocused(this.selfNameInput) && this.selfNameInput.value !== s.settings.selfName) this.selfNameInput.value = s.settings.selfName;
     this.renderVocab(s);
 
     // Alertas de menção — barra de arme, som, regras, recentes
@@ -1286,7 +1297,7 @@ export class Panel {
     }
 
     // Ollama
-    if (document.activeElement !== this.ollamaUrlInput && this.ollamaUrlInput.value !== s.settings.ollamaUrl) this.ollamaUrlInput.value = s.settings.ollamaUrl;
+    if (!isFocused(this.ollamaUrlInput) && this.ollamaUrlInput.value !== s.settings.ollamaUrl) this.ollamaUrlInput.value = s.settings.ollamaUrl;
     this.renderOllamaStatus(s);
     this.renderModelPills(s);
 

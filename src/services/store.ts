@@ -191,6 +191,35 @@ class Store {
     this.emit();
   }
 
+  /** Reaplica o nome do usuário às falas/participantes JÁ capturados como "Você"/"You"
+   *  (quando o nome é definido/alterado no meio da reunião). Mantém tudo consistente para a
+   *  transcrição, exportações e prompts da IA. */
+  relabelSelf(selfName: string) {
+    const self = selfName.trim();
+    if (!self) return;
+    const SELF = /^(você|voce|you)$/i;
+    let changed = false;
+    for (const e of this.state.session.transcript) {
+      if (SELF.test(e.participantName.trim())) {
+        e.participantName = self;
+        changed = true;
+      }
+    }
+    const seen = new Set<string>();
+    const participants: Participant[] = [];
+    for (const p of this.state.session.participants) {
+      const name = SELF.test(p.name.trim()) ? self : p.name;
+      if (seen.has(name)) {
+        changed = true;
+        continue;
+      }
+      seen.add(name);
+      participants.push({ ...p, name });
+    }
+    this.state.session.participants = participants;
+    if (changed) this.emit();
+  }
+
   // ---- Alertas de menção ----
   /** Registra uma detecção: mostra o banner, guarda no histórico e conta não-lidas. */
   pushAlert(detection: AlertDetection) {
