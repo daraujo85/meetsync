@@ -4,7 +4,7 @@
 import tokensCss from '@/ui/styles/tokens.css?inline';
 import meetsyncCss from '@/ui/styles/meetsync.css?inline';
 import { store } from '@/services/store';
-import { saveLastMeeting } from '@/services/storage-service';
+import { saveMeeting } from '@/services/storage-service';
 import { Panel } from '@/ui/panel';
 import { MeetDetector, type MeetingMeta } from './meet-detector';
 import { CaptionCapture } from './caption-capture';
@@ -62,7 +62,7 @@ function wireMeetingPersistence() {
     dirty = false;
     const s = store.get();
     if (s.session.transcript.length === 0) return;
-    void saveLastMeeting(s.session, s.ui.summaryText);
+    void saveMeeting(s.session, s.ui.summaryText);
   };
 
   store.onEntry(() => {
@@ -73,7 +73,7 @@ function wireMeetingPersistence() {
   store.subscribe((s) => {
     // Salva imediatamente ao encerrar — janela curta antes de o Meet voltar à tela inicial.
     if (s.ended && !lastEnded && s.session.transcript.length > 0) {
-      void saveLastMeeting(s.session, s.ui.summaryText);
+      void saveMeeting(s.session, s.ui.summaryText);
     }
     lastEnded = s.ended;
   });
@@ -107,6 +107,13 @@ function wireToolbarBridge() {
       const next = !store.get().ui.expanded;
       store.patchUi({ expanded: next });
       sendResponse({ ok: true, expanded: next });
+      return true;
+    }
+
+    if (msg.type === 'meetsync:open-history') {
+      // Abre o histórico mesmo fora de uma reunião (modo revisão força o painel visível).
+      store.patchUi({ review: true, expanded: true, historyOpen: true });
+      sendResponse({ ok: true });
       return true;
     }
 

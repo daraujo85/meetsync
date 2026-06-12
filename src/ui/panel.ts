@@ -8,6 +8,13 @@ import { logoImg } from './logo';
 import { store, cryptoRandomId, type AppState } from '@/services/store';
 import type { AlertDetection, AlertMode } from '@/types';
 import {
+  loadHistory,
+  loadMeeting,
+  deleteMeeting,
+  setMeetingStarred,
+  type HistoryMeta,
+} from '@/services/storage-service';
+import {
   buildTxt,
   buildSummaryTxt,
   buildFilename,
@@ -45,6 +52,55 @@ function avatarColor(name: string): string {
   let h = 0;
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return AVATAR_COLORS[h % AVATAR_COLORS.length]!;
+}
+
+// ---- helpers do histórico ----
+const MONTHS_ABBR = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function fmtDateShort(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getDate()} ${MONTHS_ABBR[d.getMonth()]}`;
+}
+
+function fmtFullDate(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const wd = d.toLocaleDateString('pt-BR', { weekday: 'long' });
+  const date = d.toLocaleDateString('pt-BR');
+  return `${wd.charAt(0).toUpperCase()}${wd.slice(1)}, ${date}`;
+}
+
+function fmtDuration(min: number): string {
+  if (min < 60) return `${min}min`;
+  return `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}min`;
+}
+
+/** Pilha de avatares sobrepostos (com "+N" se exceder). */
+function avatarStack(names: string[], max = 4): HTMLElement {
+  const wrap = el('div', { class: 'ms-avstack' });
+  const shown = names.slice(0, max);
+  shown.forEach((name, i) => {
+    const av = el('span', { class: 'ms-avstack-av', text: initials(name) });
+    av.style.background = avatarColor(name);
+    if (i > 0) av.style.marginLeft = '-8px';
+    wrap.append(av);
+  });
+  const extra = names.length - shown.length;
+  if (extra > 0) {
+    const more = el('span', { class: 'ms-avstack-av ms-avstack-more', text: `+${extra}` });
+    if (shown.length) more.style.marginLeft = '-8px';
+    wrap.append(more);
+  }
+  return wrap;
+}
+
+/** Chip de metadado (ícone + texto), tom acento opcional. */
+function metaChip(iconHtml: string, text: string, accent = false): HTMLElement {
+  return el('span', { class: 'ms-metachip' + (accent ? ' is-accent' : '') }, [
+    el('span', { class: 'ms-metachip-ico', html: iconHtml }),
+    el('span', { text }),
+  ]);
 }
 
 // ---------- helpers de status (ponto + texto, tons rec/paused/active/busy/error/idle) ----------
@@ -183,6 +239,16 @@ export class Panel {
   private lastDotKind = '';
   private panelHeader!: HTMLElement;
   private aboutSheet!: HTMLElement;
+  // histórico de reuniões
+  private historySheet!: HTMLElement;
+  private histListView!: HTMLElement;
+  private histDetailView!: HTMLElement;
+  private histList!: HTMLElement;
+  private histCount!: HTMLElement;
+  private histSearch!: HTMLInputElement;
+  private histMetas: HistoryMeta[] = [];
+  private histQuery = '';
+  private lastHistoryOpen = false;
 
   private stripStatus!: HTMLElement;
   private captionsToggle!: ReturnType<typeof makeToggle>;
@@ -340,11 +406,14 @@ export class Panel {
     ]);
 
     this.aboutSheet = this.buildAbout();
-    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet]);
+    this.historySheet = this.buildHistorySheet();
+    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet, this.historySheet]);
     return this.panel;
   }
 
   private buildHeader(): HTMLElement {
+    const historyBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: 'Histórico de reuniões', 'aria-label': 'Histórico de reuniões', html: icons.history });
+    historyBtn.addEventListener('click', () => store.patchUi({ historyOpen: true }));
     const aboutBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: 'Sobre o MeetSync', 'aria-label': 'Sobre', html: icons.info });
     aboutBtn.addEventListener('click', () => this.aboutSheet.classList.remove('ms-hidden'));
     const closeBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: 'Recolher painel', 'aria-label': 'Recolher', html: icons.collapse });
@@ -355,6 +424,7 @@ export class Panel {
       el('span', { class: 'ms-wordmark' }, [el('span', { class: 'ms-wm-meet', text: 'Meet' }), el('span', { class: 'ms-wm-sync', text: 'Sync' })]),
       el('span', { class: 'ms-badge', text: 'Beta' }),
       el('div', { class: 'ms-spacer' }),
+      historyBtn,
       aboutBtn,
       closeBtn,
     ]);
@@ -835,11 +905,216 @@ export class Panel {
     return el('div', { class: 'ms-section-label' }, [el('span', { class: 'ms-sl-ico', html: icon }), el('span', { text })]);
   }
 
+  // ================= Histórico de reuniões (sheet) =================
+  private buildHistorySheet(): HTMLElement {
+    // --- lista ---
+    const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: 'Voltar', 'aria-label': 'Voltar', html: icons.chevronLeft });
+    back.addEventListener('click', () => this.closeHistory());
+    this.histCount = el('span', { class: 'ms-hist-count' });
+    this.histSearch = el('input', { class: 'ms-input', type: 'text', placeholder: 'Buscar por título ou participante', 'aria-label': 'Buscar' }) as HTMLInputElement;
+    this.histSearch.addEventListener('input', () => { this.histQuery = this.histSearch.value; this.renderHistoryList(); });
+    this.histList = el('div', { class: 'ms-hist-list' });
+    this.histListView = el('div', { class: 'ms-hist-view' }, [
+      el('div', { class: 'ms-hist-head' }, [back, el('span', { class: 'ms-hist-title', text: 'Histórico de reuniões' }), this.histCount]),
+      el('div', { class: 'ms-hist-search' }, [this.histSearch]),
+      el('div', { class: 'ms-hist-scroll ms-scroll' }, [
+        this.histList,
+        el('div', { class: 'ms-hist-privacy' }, [
+          el('span', { class: 'ms-note-ico', html: icons.lock }),
+          el('span', { text: 'O histórico fica salvo apenas neste navegador. Exporte para guardar fora do dispositivo.' }),
+        ]),
+      ]),
+    ]);
+
+    // --- detalhe (preenchido ao abrir) ---
+    this.histDetailView = el('div', { class: 'ms-hist-view ms-hidden' });
+
+    return el('div', { class: 'ms-hist ms-hidden' }, [this.histListView, this.histDetailView]);
+  }
+
+  private openHistory() {
+    this.histDetailView.classList.add('ms-hidden');
+    this.histListView.classList.remove('ms-hidden');
+    this.historySheet.classList.remove('ms-hidden');
+    void this.refreshHistory();
+  }
+
+  private closeHistory() {
+    this.historySheet.classList.add('ms-hidden');
+    const s = store.get();
+    // Se foi aberto fora de reunião (modo revisão), esconde o painel ao fechar.
+    if (s.ui.review && !s.inMeeting && !s.ended) store.patchUi({ historyOpen: false, review: false, expanded: false });
+    else store.patchUi({ historyOpen: false });
+  }
+
+  private async refreshHistory() {
+    this.histMetas = await loadHistory();
+    this.renderHistoryList();
+  }
+
+  private renderHistoryList() {
+    const q = this.histQuery.trim().toLowerCase();
+    const list = this.histMetas.filter(
+      (m) => !q || m.title.toLowerCase().includes(q) || m.participants.some((p) => p.toLowerCase().includes(q)),
+    );
+    this.histCount.textContent = String(this.histMetas.length);
+    if (!list.length) {
+      this.histList.replaceChildren(
+        el('div', { class: 'ms-hist-empty' }, [
+          el('span', { class: 'ms-hist-empty-ico', html: icons.history }),
+          el('span', { text: this.histMetas.length ? 'Nenhuma reunião encontrada.' : 'Nenhuma reunião no histórico ainda.' }),
+        ]),
+      );
+      return;
+    }
+    this.histList.replaceChildren(...list.map((m) => this.historyCard(m)));
+  }
+
+  private historyCard(m: HistoryMeta): HTMLElement {
+    const titleRow = el('div', { class: 'ms-hist-c-titlerow' }, [
+      ...(m.starred ? [el('span', { class: 'ms-hist-star', html: icons.starFill })] : []),
+      el('span', { class: 'ms-hist-c-title', text: m.title }),
+    ]);
+    const metaRow = el('div', { class: 'ms-hist-c-meta' }, [
+      el('span', { class: 'ms-hist-c-mi' }, [el('span', { class: 'ms-hist-mi-ico', html: icons.calendar }), el('span', { text: fmtDateShort(m.startISO ?? m.savedAt) })]),
+      el('span', { class: 'ms-hist-c-mi' }, [el('span', { class: 'ms-hist-mi-ico', html: icons.clock }), el('span', { text: fmtDuration(m.durationMin) })]),
+    ]);
+    const top = el('div', { class: 'ms-hist-c-top' }, [
+      el('div', { class: 'ms-hist-c-left' }, [titleRow, metaRow]),
+      avatarStack(m.participants, 4),
+    ]);
+    const chips = el('div', { class: 'ms-hist-c-chips' }, [
+      metaChip(icons.chatBubble, `${m.lines} linhas`),
+      m.hasSummary ? metaChip(icons.doc, 'Com ata', true) : metaChip(icons.doc, 'Sem ata'),
+      el('span', { class: 'ms-hist-c-spacer' }),
+      metaChip(icons.cloudUp, 'Local'),
+    ]);
+    const card = el('button', { class: 'ms-hist-card', type: 'button' }, [top, chips]);
+    card.addEventListener('click', () => void this.openDetail(m));
+    return card;
+  }
+
+  private async openDetail(m: HistoryMeta) {
+    const saved = await loadMeeting(m.id);
+    if (!saved) { void this.refreshHistory(); return; }
+    const session = saved.session;
+    const summaryText = saved.summaryText;
+
+    const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: 'Voltar', 'aria-label': 'Voltar', html: icons.chevronLeft });
+    back.addEventListener('click', () => { this.histDetailView.classList.add('ms-hidden'); this.histListView.classList.remove('ms-hidden'); });
+
+    const star = el('button', { class: 'ms-icon-btn ms-icon-btn-sm ms-hist-d-star' + (m.starred ? ' is-on' : ''), type: 'button', title: 'Favoritar', 'aria-label': 'Favoritar', html: m.starred ? icons.starFill : icons.star });
+    star.addEventListener('click', () => void (async () => {
+      m.starred = !m.starred;
+      star.innerHTML = m.starred ? icons.starFill : icons.star;
+      star.classList.toggle('is-on', m.starred);
+      await setMeetingStarred(m.id, m.starred);
+      this.histMetas = await loadHistory();
+    })());
+
+    const head = el('div', { class: 'ms-hist-head' }, [
+      back,
+      el('div', { class: 'ms-hist-d-titlewrap' }, [
+        el('div', { class: 'ms-hist-title', text: m.title }),
+        el('div', { class: 'ms-hist-d-sub', text: `${fmtFullDate(m.startISO ?? m.savedAt)} · ${m.startISO ? formatTime(m.startISO) : ''}${m.endISO ? '–' + formatTime(m.endISO) : ''}` }),
+      ]),
+      star,
+    ]);
+
+    // métricas
+    const strip = el('div', { class: 'ms-hist-d-strip' }, [
+      el('div', { class: 'ms-hist-d-stat' }, [el('div', { class: 'ms-hist-d-statk', text: 'Duração' }), el('div', { class: 'ms-hist-d-statv', text: fmtDuration(m.durationMin) })]),
+      el('div', { class: 'ms-hist-d-stat' }, [el('div', { class: 'ms-hist-d-statk', text: 'Linhas / chat' }), el('div', { class: 'ms-hist-d-statv' }, [el('span', { text: String(m.lines) }), el('span', { class: 'ms-hist-d-statsub', text: ` · ${m.chats} chat` })])]),
+    ]);
+
+    // participantes
+    const people = el('div', { class: 'ms-hist-d-people' }, [avatarStack(m.participants, 6), el('span', { class: 'ms-hist-d-pcount', text: `${m.participants.length} pessoas` })]);
+
+    // segmented + preview
+    const previewBox = el('div', { class: 'ms-hist-d-preview' });
+    let view: 'transcript' | 'summary' = 'transcript';
+    const segBtns = new Map<'transcript' | 'summary', HTMLButtonElement>();
+    const renderPreview = () => {
+      for (const [k, b] of segBtns) b.classList.toggle('is-sel', k === view);
+      if (view === 'transcript') {
+        const ordered = [...session.transcript].sort((a, b) => (a.capturedAt < b.capturedAt ? -1 : a.capturedAt > b.capturedAt ? 1 : 0));
+        const shown = ordered.slice(0, 14);
+        previewBox.replaceChildren(
+          ...shown.map((e, i) =>
+            el('div', { class: 'ms-hist-pv-row' + (i > 0 ? ' has-sep' : '') }, [
+              el('div', { class: 'ms-hist-pv-who', text: e.participantName }),
+              el('div', { class: 'ms-hist-pv-text', text: e.text }),
+            ]),
+          ),
+          el('div', { class: 'ms-hist-pv-foot', text: `Prévia · ${m.lines} linhas no total` }),
+        );
+      } else {
+        previewBox.replaceChildren(el('div', { class: 'ms-hist-pv-summary', text: summaryText ?? 'Esta reunião não tem ata gerada.' }));
+      }
+    };
+    const seg = el('div', { class: 'ms-hist-d-seg' });
+    ([['transcript', 'Transcrição'], ['summary', 'Resumo']] as const).forEach(([k, label]) => {
+      const dis = k === 'summary' && !summaryText;
+      const b = el('button', { class: 'ms-hist-seg-btn', type: 'button', text: label }) as HTMLButtonElement;
+      if (dis) b.classList.add('is-disabled');
+      else b.addEventListener('click', () => { view = k; renderPreview(); });
+      segBtns.set(k, b);
+      seg.append(b);
+    });
+
+    // ações
+    const dlTxt = this.histAction(icons.download, 'Baixar transcrição (.txt)', 'Arquivo de texto com cabeçalho e falas', false, () =>
+      downloadText(buildFilename(session), buildTxt(session, { includeHeader: true })),
+    );
+    const dlAta = this.histAction(icons.doc, 'Baixar resumo / ata', summaryText ? 'Ata estruturada desta reunião' : 'Esta reunião não tem ata gerada', !summaryText, () => {
+      if (summaryText) downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(session, summaryText));
+    });
+    const del = this.histAction(icons.trash, 'Excluir do histórico', 'Apaga a transcrição deste dispositivo', false, () => void (async () => {
+      await deleteMeeting(m.id);
+      this.histDetailView.classList.add('ms-hidden');
+      this.histListView.classList.remove('ms-hidden');
+      void this.refreshHistory();
+    })(), true);
+
+    const scroll = el('div', { class: 'ms-hist-scroll ms-scroll' }, [
+      strip,
+      this.sectionLabel('Participantes', icons.people),
+      people,
+      seg,
+      previewBox,
+      this.sectionLabel('Ações', icons.download),
+      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, del]),
+    ]);
+
+    renderPreview();
+    this.histDetailView.replaceChildren(head, scroll);
+    this.histListView.classList.add('ms-hidden');
+    this.histDetailView.classList.remove('ms-hidden');
+  }
+
+  private histAction(icon: string, label: string, sub: string, disabled: boolean, onClick: () => void, danger = false): HTMLElement {
+    const row = el('button', { class: 'ms-hist-action' + (danger ? ' is-danger' : '') + (disabled ? ' is-disabled' : ''), type: 'button' }, [
+      el('span', { class: 'ms-hist-action-ico', html: icon }),
+      el('div', { class: 'ms-hist-action-body' }, [el('div', { class: 'ms-hist-action-label', text: label }), el('div', { class: 'ms-hist-action-sub', text: sub })]),
+      ...(danger ? [] : [el('span', { class: 'ms-hist-action-chev', html: icons.chevronRight })]),
+    ]);
+    if (!disabled) row.addEventListener('click', onClick);
+    return row;
+  }
+
+
   // ================= Atualização reativa =================
   private update(s: AppState) {
-    const visible = s.inMeeting || s.ended; // pós-reunião: painel continua para revisar/baixar
+    const visible = s.inMeeting || s.ended || !!s.ui.review; // pós-reunião / revisão de histórico
     this.compact.classList.toggle('ms-hidden', s.ui.expanded || !visible);
     this.panel.classList.toggle('ms-hidden', !s.ui.expanded || !visible);
+
+    // Sheet de histórico (abre por mensagem do popup ou pelo botão do header).
+    if (!!s.ui.historyOpen !== this.lastHistoryOpen) {
+      this.lastHistoryOpen = !!s.ui.historyOpen;
+      if (s.ui.historyOpen) this.openHistory();
+      else this.historySheet.classList.add('ms-hidden');
+    }
 
     this.ccBtn.classList.toggle('is-active', s.captionsOn);
     this.captionsToggle.setOn(s.captionsOn);

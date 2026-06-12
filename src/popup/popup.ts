@@ -5,8 +5,10 @@
 // via chrome.tabs.sendMessage para ler o status e alternar o painel.
 
 import { MS_MARK_URL } from '@/ui/logo';
-import { loadLastMeeting, clearLastMeeting, type SavedMeeting } from '@/services/storage-service';
-import { buildTxt, buildFilename, downloadText } from '@/services/export-txt';
+import { loadHistory, loadMeeting, loadSettings, type HistoryMeta } from '@/services/storage-service';
+import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, downloadText } from '@/services/export-txt';
+import { correctTranscript, summarizeMeeting } from '@/services/summary-service';
+import type { UserSettings } from '@/types';
 
 const PRIVACY_URL = 'https://daraujo85.github.io/meetsync/privacy.html';
 const MEET_URL = 'https://meet.google.com/';
@@ -67,7 +69,48 @@ function footer(): HTMLElement {
   ]);
 }
 
-let savedMeeting: SavedMeeting | null = null;
+let history: HistoryMeta[] = [];
+let settings: UserSettings | null = null;
+let activeTabId: number | undefined;
+let activeIsMeet = false;
+
+function aiReady(): boolean {
+  return !!settings && !!settings.ollamaModel && !!settings.ollamaUrl && (settings.enableAiCorrection || settings.includeSummary);
+}
+
+/** Baixa a transcrição aplicando correção/resumo via Ollama (espelha o fluxo do painel). */
+async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
+  const s = settings;
+  if (!s) return;
+  const saved = await loadMeeting(meta.id);
+  if (!saved) return;
+  const session = saved.session;
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Processando com Ollama…';
+  try {
+    let corrected = false;
+    let correctedText = '';
+    let summaryText = saved.summaryText;
+    if (s.enableAiCorrection) {
+      try { correctedText = await correctTranscript(session, s.ollamaUrl, s.ollamaModel!); corrected = true; } catch { /* mantém bruto */ }
+    }
+    if (s.includeSummary && !summaryText) {
+      try { summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!); } catch { /* sem ata */ }
+    }
+    const inlineSummary = !!summaryText && !s.separateSummaryFile;
+    const main = corrected
+      ? (s.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (inlineSummary ? `\n\n${summaryText}` : '')
+      : buildTxt(session, { includeHeader: s.includeHeaderByDefault, summaryText: inlineSummary ? summaryText : undefined });
+    const gap = () => new Promise<void>((r) => setTimeout(r, 500));
+    downloadText(buildFilename(session), main);
+    if (summaryText && s.separateSummaryFile) { await gap(); downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(session, summaryText)); }
+    if (s.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
+  } finally {
+    btn.disabled = false;
+    if (original) btn.textContent = original;
+  }
+}
 
 function render(body: HTMLElement, recovery?: HTMLElement | null) {
   root.replaceChildren(header(), body, ...(recovery ? [recovery] : []), footer());
@@ -81,25 +124,47 @@ function formatWhen(iso: string): string {
   }
 }
 
-/** Card de recuperação da última reunião salva (rede de segurança contra perda no redirect). */
+/** Card do histórico: última reunião salva (baixar) + atalho para abrir o histórico completo. */
 function recoveryCard(): HTMLElement | null {
-  const sm = savedMeeting;
-  if (!sm || !sm.session.transcript || sm.session.transcript.length === 0) return null;
-  const sess = sm.session;
-  const title = sess.meetingTitle || sess.meetingCode || 'Reunião';
-  const n = sess.transcript.length;
+  if (!history.length) return null;
+  const last = history[0]!;
 
-  const dl = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt' });
-  dl.addEventListener('click', () => downloadText(buildFilename(sess), buildTxt(sess, { includeHeader: true, summaryText: sm.summaryText })));
-  const discard = el('button', { class: 'ms-rec-discard', type: 'button', text: 'Descartar' });
+  const downloadRaw = () => {
+    void (async () => {
+      const saved = await loadMeeting(last.id);
+      if (saved) downloadText(buildFilename(saved.session), buildTxt(saved.session, { includeHeader: true }));
+    })();
+  };
 
-  const card = el('div', { class: 'ms-pop-recovery' }, [
+  const actions: (Node | string)[] = [];
+  if (aiReady()) {
+    // Com IA configurada: botão primário "com IA" + atalho para o .txt bruto (igual ao painel).
+    const dlAi = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt com IA' }) as HTMLButtonElement;
+    dlAi.addEventListener('click', () => void downloadWithAi(last, dlAi));
+    const dlRaw = el('button', { class: 'ms-rec-discard', type: 'button', text: 'Sem IA' });
+    dlRaw.addEventListener('click', downloadRaw);
+    actions.push(dlAi, dlRaw);
+  } else {
+    const dl = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt' });
+    dl.addEventListener('click', downloadRaw);
+    actions.push(dl);
+  }
+
+  if (activeIsMeet && activeTabId !== undefined) {
+    const open = el('button', { class: 'ms-rec-discard', type: 'button', text: `Ver histórico (${history.length})` });
+    open.addEventListener('click', () => {
+      chrome.tabs.sendMessage(activeTabId!, { type: 'meetsync:open-history' }, () => void chrome.runtime.lastError);
+      window.close();
+    });
+    actions.push(open);
+  }
+
+  return el('div', { class: 'ms-pop-recovery' }, [
     el('div', { class: 'ms-rec-title', text: 'Última reunião salva' }),
-    el('div', { class: 'ms-rec-sub', text: `${title} · ${n} fala(s) · ${formatWhen(sm.savedAt)}` }),
-    el('div', { class: 'ms-rec-actions' }, [dl, discard]),
+    el('div', { class: 'ms-rec-sub', text: `${last.title} · ${last.lines} fala(s) · ${formatWhen(last.savedAt)}` }),
+    el('div', { class: 'ms-rec-actions' }, actions),
+    ...(activeIsMeet ? [] : [el('div', { class: 'ms-rec-hint', text: `${history.length} reunião(ões) no histórico — abra o Google Meet para revisar todas.` })]),
   ]);
-  discard.addEventListener('click', () => { void clearLastMeeting(); savedMeeting = null; card.remove(); });
-  return card;
 }
 
 /** Estado fora do Google Meet: orienta e oferece atalho para entrar numa reunião. */
@@ -167,11 +232,13 @@ function renderInMeeting(s: StatusReply, tabId: number) {
 }
 
 async function init() {
-  savedMeeting = await loadLastMeeting();
+  [history, settings] = await Promise.all([loadHistory(), loadSettings()]);
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   // tab.url só é legível para hosts com permissão (temos meet.google.com): basta para
   // identificar positivamente o Meet — qualquer outra aba cai no estado de orientação.
   const isMeet = !!tab?.url && tab.url.includes('meet.google.com');
+  activeTabId = tab?.id;
+  activeIsMeet = isMeet && tab?.id !== undefined;
 
   if (!isMeet || tab?.id === undefined) {
     renderOutsideMeet();

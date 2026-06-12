@@ -182,6 +182,12 @@ body {
 .ms-rec-discard:hover {
   color: var(--ms-fg);
 }
+.ms-rec-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ms-fg-dim);
+  line-height: 1.45;
+}
 
 /* Rodapé */
 .ms-pop-foot {

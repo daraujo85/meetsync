@@ -23,6 +23,13 @@ export const icons = {
   trash: stroke('<path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/>'),
   plus: stroke('<path d="M12 5v14M5 12h14" stroke-width="2"/>'),
   video: solid('<rect x="3" y="7" width="12" height="10" rx="2.5"/><path d="M15 10.5l5-2.5v8l-5-2.5z"/>'),
+  history: stroke('<path d="M3.5 12a8.5 8.5 0 109-8.48A8.5 8.5 0 005 7.5M3.5 4v3.5H7"/><path d="M12 7.5V12l3 1.8"/>'),
+  calendar: stroke('<rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M4 9.5h16M8 3.5v3M16 3.5v3"/>'),
+  search: stroke('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>'),
+  star: stroke('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'),
+  starFill: solid('<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>'),
+  people: stroke('<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0111 0M16 6.2a3 3 0 010 5.6M21 19a5.5 5.5 0 00-4-5.3"/>'),
+  cloudUp: stroke('<path d="M7 18a4.5 4.5 0 01-.5-8.97 6 6 0 0111.64-1.2A4.5 4.5 0 0117.5 18"/><path d="M12 21v-8m0 0l-3 3m3-3l3 3"/>'),
   expand: wrap('M15 18l-6-6 6-6v12z'), // chevron-left (abrir painel à esquerda)
   collapse: wrap('M9 6l6 6-6 6V6z'), // chevron-right (recolher)
   chevronLeft: wrap('M15 18l-6-6 6-6v12z'),

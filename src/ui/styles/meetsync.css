@@ -176,6 +176,7 @@ button {
 /* ============ PAINEL EXPANDIDO (§10.2) ============ */
 .ms-panel {
   pointer-events: auto;
+  position: relative; /* contexto para os sheets (Sobre / Histórico) sobreporem só o painel */
   width: 420px;
   max-width: calc(100vw - 24px);
   height: 90vh;
@@ -877,3 +878,77 @@ button {
 /* Links clicáveis no chat */
 .ms-link { color: var(--ms-accent-blue); text-decoration: none; word-break: break-all; }
 .ms-link:hover { text-decoration: underline; }
+
+/* ===== Histórico de reuniões (sheet) ===== */
+.ms-hist { position: absolute; inset: 0; z-index: 12; background: var(--ms-bg-surface); display: flex; flex-direction: column; border-radius: inherit; overflow: hidden; }
+.ms-hist-view { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.ms-hist-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 14px; border-bottom: 1px solid var(--ms-border-subtle); }
+.ms-hist-title { font-size: 14px; font-weight: 600; color: var(--ms-text-primary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-hist-count { font-size: 12px; color: var(--ms-text-muted); flex: none; }
+.ms-hist-search { padding: 12px 16px; border-bottom: 1px solid var(--ms-border-subtle); }
+.ms-hist-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 18px; }
+.ms-hist-list { display: flex; flex-direction: column; gap: 10px; }
+.ms-hist-empty { text-align: center; color: var(--ms-text-muted); font-size: 13px; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.ms-hist-empty-ico svg { width: 40px; height: 40px; color: var(--ms-border-subtle); }
+.ms-hist-privacy { display: flex; gap: 8px; align-items: flex-start; padding: 11px 13px; border-radius: 10px; background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); margin-top: 12px; font-size: 11.5px; color: var(--ms-text-muted); line-height: 1.5; }
+
+/* card */
+.ms-hist-card { display: block; width: 100%; text-align: left; cursor: pointer; background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-border-subtle); border-radius: 12px; padding: 13px 14px; font-family: var(--ms-font); transition: background 0.15s ease; }
+.ms-hist-card:hover { background: var(--ms-bg-surface-hover); }
+.ms-hist-c-top { display: flex; align-items: flex-start; gap: 10px; }
+.ms-hist-c-left { flex: 1; min-width: 0; }
+.ms-hist-c-titlerow { display: flex; align-items: center; gap: 7px; }
+.ms-hist-star svg { width: 14px; height: 14px; color: var(--ms-warning-yellow); }
+.ms-hist-c-title { font-size: 14px; font-weight: 600; color: var(--ms-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-hist-c-meta { display: flex; align-items: center; gap: 12px; margin-top: 5px; color: var(--ms-text-muted); font-size: 12px; }
+.ms-hist-c-mi { display: inline-flex; align-items: center; gap: 4px; }
+.ms-hist-mi-ico svg { width: 13px; height: 13px; }
+.ms-hist-c-chips { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--ms-border-subtle); flex-wrap: wrap; }
+.ms-hist-c-spacer { margin-left: auto; }
+
+/* avatar stack */
+.ms-avstack { display: flex; align-items: center; flex: none; }
+.ms-avstack-av { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ms-bg-surface); display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; font-weight: 600; flex: none; }
+.ms-avstack-more { background: var(--ms-bg-surface-elevated); color: var(--ms-text-secondary); }
+
+/* meta chip */
+.ms-metachip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--ms-text-muted); white-space: nowrap; }
+.ms-metachip.is-accent { color: var(--ms-accent-blue); }
+.ms-metachip-ico svg { width: 13px; height: 13px; }
+
+/* detalhe */
+.ms-hist-d-titlewrap { flex: 1; min-width: 0; }
+.ms-hist-d-sub { font-size: 11.5px; color: var(--ms-text-muted); margin-top: 1px; }
+.ms-hist-d-star.is-on { color: var(--ms-warning-yellow); }
+.ms-hist-d-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.ms-hist-d-stat { flex: 1; min-width: 120px; background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); border-radius: 10px; padding: 10px 12px; }
+.ms-hist-d-statk { font-size: 11px; color: var(--ms-text-muted); }
+.ms-hist-d-statv { font-size: 15px; font-weight: 600; color: var(--ms-text-primary); margin-top: 2px; }
+.ms-hist-d-statsub { font-size: 12px; color: var(--ms-text-muted); font-weight: 400; }
+.ms-hist-d-people { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.ms-hist-d-pcount { font-size: 12.5px; color: var(--ms-text-secondary); }
+.ms-hist-d-seg { display: flex; gap: 4px; background: var(--ms-bg-app); border-radius: 999px; padding: 3px; border: 1px solid var(--ms-border-subtle); margin-bottom: 14px; }
+.ms-hist-seg-btn { flex: 1; padding: 7px 10px; border-radius: 999px; border: none; cursor: pointer; font-family: var(--ms-font); font-size: 12.5px; font-weight: 500; background: transparent; color: var(--ms-text-secondary); }
+.ms-hist-seg-btn.is-sel { background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); }
+.ms-hist-seg-btn.is-disabled { opacity: 0.4; cursor: not-allowed; }
+.ms-hist-d-preview { background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); border-radius: 10px; padding: 6px 14px 10px; margin-bottom: 18px; }
+.ms-hist-pv-row { padding: 9px 0; }
+.ms-hist-pv-row.has-sep { border-top: 1px solid rgba(60, 64, 67, 0.5); }
+.ms-hist-pv-who { font-size: 12.5px; font-weight: 600; color: var(--ms-text-primary); }
+.ms-hist-pv-text { font-size: 13px; color: var(--ms-text-secondary); line-height: 1.5; margin-top: 2px; }
+.ms-hist-pv-foot { font-size: 11.5px; color: var(--ms-text-muted); text-align: center; padding-top: 8px; }
+.ms-hist-pv-summary { font-size: 13px; color: var(--ms-text-secondary); line-height: 1.6; white-space: pre-wrap; padding: 6px 0; }
+.ms-hist-actions { display: flex; flex-direction: column; gap: 8px; }
+.ms-hist-action { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; cursor: pointer; background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-border-subtle); border-radius: 10px; padding: 11px 13px; font-family: var(--ms-font); transition: background 0.15s ease; }
+.ms-hist-action:hover { background: var(--ms-bg-surface-hover); }
+.ms-hist-action.is-danger { border-color: rgba(242, 139, 130, 0.32); }
+.ms-hist-action.is-disabled { opacity: 0.45; cursor: not-allowed; }
+.ms-hist-action-ico { width: 32px; height: 32px; border-radius: 8px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); }
+.ms-hist-action-ico svg { width: 17px; height: 17px; }
+.ms-hist-action.is-danger .ms-hist-action-ico { background: var(--ms-danger-red-soft); color: var(--ms-danger-red); }
+.ms-hist-action-body { flex: 1; min-width: 0; }
+.ms-hist-action-label { font-size: 13px; font-weight: 500; color: var(--ms-text-primary); }
+.ms-hist-action.is-danger .ms-hist-action-label { color: var(--ms-danger-red); }
+.ms-hist-action-sub { font-size: 11.5px; color: var(--ms-text-muted); margin-top: 1px; }
+.ms-hist-action-chev { color: var(--ms-text-muted); flex: none; display: inline-flex; }
+.ms-hist-action-chev svg { width: 16px; height: 16px; }

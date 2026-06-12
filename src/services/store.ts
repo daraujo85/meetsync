@@ -16,6 +16,10 @@ import { loadSettings, saveSettings } from './storage-service';
 export type UiState = {
   expanded: boolean;
   activeTab: 'transcript' | 'summary' | 'alerts' | 'export' | 'upload';
+  /** Modo revisão: força o painel visível fora de uma reunião (ex.: abrir histórico pelo popup). */
+  review?: boolean;
+  /** Sheet de histórico de reuniões aberto. */
+  historyOpen?: boolean;
   /** texto do último resumo/ata gerado, para exibir na aba Resumo. */
   summaryText?: string;
   /** true enquanto um resumo está sendo gerado/recebido (streaming). */
