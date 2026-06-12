@@ -71,6 +71,24 @@ that contains the avatar `<img>`), not by class. Dedup: each caption DOM node �
 plus a tolerant `sameUtterance` (normalized, punctuation-insensitive prefix match) that collapses Meet's
 cumulative re-finalized blocks of a long monologue into one growing entry. Chat dedups by `data-message-id`.
 
+### Mention alerts (toolbar action + notifications)
+
+`src/content/alert-watcher.ts` watches captured speech and alerts the user when **someone else**
+mentions a watched term or (via Ollama) talks about a topic of interest — for when the user is in
+another tab. It hooks `store.onEntry()` (fired on every `upsertEntry`), does accent/case-insensitive
+**whole-word** matching for `mentionTerms`, and skips the user's own lines (`selfName` / "Você"). The
+AI path polls every 15s, sending recent non-self lines + `mentionAiTopics` to `ollama.generate`,
+expecting strict JSON `{relevante, motivo}`. Actions (all toggles in the new **Alertas** tab):
+clickable Chrome notification (worker focuses the originating Meet tab on click — `meetsync:alert`),
+a Web Audio beep in the page, and a per-tab toolbar badge counter (cleared when the Meet tab is
+re-activated). No new permissions beyond `notifications`.
+
+The **toolbar icon** uses a conditional popup (`src/popup/`, no `onClicked` since they're mutually
+exclusive in MV3): in a Meet tab it shows capture status + a panel toggle (via `meetsync:get-status` /
+`meetsync:toggle-panel` to the content script); elsewhere it orients the user. `src/welcome/welcome.html`
+is a static extension page opened on first install (`onInstalled`) and from the popup; it's an extra
+Rollup input in `vite.config.ts` (not referenced by the manifest).
+
 ### Ollama bridge (+ streaming)
 
 `src/services/ollama-client.ts` holds both sides: pure fetch functions run in the worker via

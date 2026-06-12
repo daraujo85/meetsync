@@ -56,3 +56,19 @@
   --ms-fs-secondary: 12px;
   --ms-fs-title: 15px;
 }
+
+/* Animações dos alertas de menção (banner + sininho) */
+@keyframes ms-bell-shake {
+  0%, 100% { transform: rotate(0); }
+  10%, 30% { transform: rotate(-12deg); }
+  20%, 40% { transform: rotate(12deg); }
+  50% { transform: rotate(0); }
+}
+@keyframes ms-alert-in {
+  from { opacity: 0; transform: translate(-50%, -16px) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes ms-ring-ping {
+  0% { transform: scale(0.6); opacity: 0.7; }
+  100% { transform: scale(2.2); opacity: 0; }
+}

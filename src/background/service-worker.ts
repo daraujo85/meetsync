@@ -46,6 +46,62 @@ chrome.runtime.onMessage.addListener((message: NotifyMessage) => {
   return undefined;
 });
 
+// Alertas de menção: notificação clicável (foca a aba do Meet) + badge no ícone.
+type AlertMessage = { type: 'meetsync:alert'; title: string; message: string; notify?: boolean; badge?: boolean };
+
+// notificationId -> aba que originou o alerta (para focar ao clicar).
+const alertTabByNotif = new Map<string, { tabId: number; windowId?: number }>();
+// tabId -> alertas pendentes (contador do badge).
+const badgeByTab = new Map<number, number>();
+let alertSeq = 0;
+
+chrome.runtime.onMessage.addListener((message: AlertMessage, sender) => {
+  if (!message || message.type !== 'meetsync:alert') return undefined;
+  const tabId = sender.tab?.id;
+  const windowId = sender.tab?.windowId;
+
+  if (message.notify) {
+    const notifId = `meetsync-alert-${++alertSeq}`;
+    chrome.notifications.create(notifId, {
+      type: 'basic',
+      iconUrl: chrome.runtime.getURL('public/icons/icon-128.png'),
+      title: message.title,
+      message: message.message,
+      priority: 2,
+      requireInteraction: true,
+    });
+    if (typeof tabId === 'number') alertTabByNotif.set(notifId, { tabId, windowId });
+  }
+
+  if (message.badge && typeof tabId === 'number') {
+    const count = (badgeByTab.get(tabId) ?? 0) + 1;
+    badgeByTab.set(tabId, count);
+    void chrome.action.setBadgeBackgroundColor({ color: '#EA4335' });
+    void chrome.action.setBadgeText({ tabId, text: String(count) });
+  }
+  return undefined;
+});
+
+// Clique na notificação → traz a aba do Meet para frente e limpa o alerta.
+chrome.notifications.onClicked.addListener((notifId) => {
+  const target = alertTabByNotif.get(notifId);
+  if (!target) return;
+  void chrome.tabs.update(target.tabId, { active: true });
+  if (typeof target.windowId === 'number') void chrome.windows.update(target.windowId, { focused: true });
+  void chrome.notifications.clear(notifId);
+  alertTabByNotif.delete(notifId);
+  clearBadge(target.tabId);
+});
+
+// Ao voltar para a aba do Meet, zera o badge de alertas pendentes.
+chrome.tabs.onActivated.addListener(({ tabId }) => clearBadge(tabId));
+
+function clearBadge(tabId: number) {
+  if (!badgeByTab.has(tabId)) return;
+  badgeByTab.delete(tabId);
+  void chrome.action.setBadgeText({ tabId, text: '' });
+}
+
 // Página de boas-vindas (C): aberta apenas na primeira instalação.
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {

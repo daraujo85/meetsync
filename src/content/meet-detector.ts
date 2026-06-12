@@ -53,11 +53,20 @@ export function isInMeeting(): boolean {
   return queryAny(SELECTORS.leaveButton) !== null;
 }
 
+/**
+ * Carência antes de declarar "saiu": o Meet remove o botão de sair por instantes ao re-renderizar
+ * (fullscreen, troca de layout, apresentação). Sem isto, um sumiço transiente vira onLeft+onJoined
+ * e o onJoined zera a transcrição — perdendo o começo da reunião. RF-009.
+ */
+const LEAVE_GRACE_MS = 6000;
+
 export class MeetDetector {
   private observer: MutationObserver | null = null;
   private joined = false;
   private currentCode = '';
   private pollId: number | null = null;
+  /** timestamp (ms) do primeiro "fora da reunião" enquanto ainda joined; 0 = presente. */
+  private absentSince = 0;
 
   constructor(private cb: DetectorCallbacks) {}
 
@@ -88,16 +97,30 @@ export class MeetDetector {
     const inMeeting = isInMeeting();
     const meta = getMeetingMeta();
 
-    if (inMeeting && (!this.joined || meta.meetingCode !== this.currentCode)) {
-      // Troca de reunião conta como sair + entrar (RF-009).
-      if (this.joined && meta.meetingCode !== this.currentCode) this.cb.onLeft();
-      this.joined = true;
-      this.currentCode = meta.meetingCode;
-      this.cb.onJoined(meta);
-    } else if (!inMeeting && this.joined) {
-      this.joined = false;
-      this.currentCode = '';
-      this.cb.onLeft();
+    if (inMeeting) {
+      this.absentSince = 0; // presença confirmada — cancela carência de saída
+      const code = meta.meetingCode;
+      if (!this.joined) {
+        this.joined = true;
+        this.currentCode = code;
+        this.cb.onJoined(meta);
+      } else if (code && code !== this.currentCode) {
+        // Troca REAL de reunião (código novo e não vazio) conta como sair + entrar (RF-009).
+        this.cb.onLeft();
+        this.currentCode = code;
+        this.cb.onJoined(meta);
+      }
+      // code vazio (regex falhou num tick) com sessão ativa: ignora, mantém currentCode.
+    } else if (this.joined) {
+      // Não declara saída de imediato: o botão de sair some por instantes em re-renders do Meet.
+      if (this.absentSince === 0) {
+        this.absentSince = Date.now();
+      } else if (Date.now() - this.absentSince >= LEAVE_GRACE_MS) {
+        this.joined = false;
+        this.currentCode = '';
+        this.absentSince = 0;
+        this.cb.onLeft();
+      }
     }
   }
 

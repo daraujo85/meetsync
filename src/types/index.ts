@@ -43,6 +43,47 @@ export type UserSettings = {
   autoOpenChat: boolean;
   /** Também baixa um .json estruturado (para agentes de IA / automações). */
   exportJson: boolean;
+
+  // ---- Alertas de menção (avisar quando falarem comigo / de um assunto) ----
+  /** "Monitorar a reunião": liga o monitoramento de menções (toggle mestre). */
+  alertsArmed: boolean;
+  /** Toca um bipe na aba do Meet ao disparar. */
+  alertSound: boolean;
+  /** Seu nome na reunião — usado para ignorar suas próprias falas (não autoalerta). */
+  selfName: string;
+  /** Regras monitoradas (palavra/frase ou contexto via IA). */
+  alertWatches: AlertWatch[];
+};
+
+/** Tipo de regra de alerta. */
+export type AlertMode = 'keyword' | 'ai';
+
+/** Uma regra monitorada: palavra/frase (keyword) ou contexto por IA (ai). */
+export type AlertWatch = {
+  id: string;
+  mode: AlertMode;
+  label: string;
+  /** keyword: termos que disparam (qualquer um). */
+  terms?: string[];
+  /** ai: descrição em linguagem natural do que a IA deve vigiar. */
+  desc?: string;
+  enabled: boolean;
+};
+
+/** Uma detecção disparada (runtime — overlay + histórico, não persiste). */
+export type AlertDetection = {
+  key: string;
+  mode: AlertMode;
+  /** rótulo da regra que disparou. */
+  label: string;
+  /** motivo curto exibido em destaque (ex.: 'Mencionaram "Ana"'). */
+  reason: string;
+  /** quem falou. */
+  who: string;
+  /** trecho da fala. */
+  text: string;
+  /** horário (HH:MM). */
+  t: string;
 };
 
 /** Estado de captura mostrado na UI (§10.6). */
@@ -72,4 +113,24 @@ export const DEFAULT_SETTINGS: UserSettings = {
   summaryIntervalMin: 2,
   autoOpenChat: true,
   exportJson: false,
+  alertsArmed: false,
+  alertSound: true,
+  selfName: '',
+  alertWatches: [
+    { id: 'w-name', mode: 'keyword', label: 'Menção ao seu nome', terms: [], enabled: true },
+    {
+      id: 'w-shared',
+      mode: 'ai',
+      label: 'Falaram do que você compartilhou',
+      desc: 'Detecta quando citam a tela, planilha ou documento que você apresentou.',
+      enabled: false,
+    },
+    {
+      id: 'w-decision',
+      mode: 'ai',
+      label: 'Pediram uma decisão ou ação sua',
+      desc: 'Avisa quando o contexto indica que esperam uma resposta ou aprovação sua.',
+      enabled: false,
+    },
+  ],
 };

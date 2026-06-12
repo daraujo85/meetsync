@@ -384,6 +384,100 @@ button {
   border-color: var(--ms-border-focus);
 }
 
+/* Botão fantasma + ícone em botões (usados nos alertas) */
+.ms-btn-ghost { background: transparent; color: var(--ms-text-secondary); border-color: transparent; }
+.ms-btn-ghost:hover:not(:disabled) { background: var(--ms-bg-surface-elevated); }
+.ms-btn-ico { display: inline-flex; }
+.ms-btn-ico svg { width: 16px; height: 16px; }
+
+/* ===== Aba Alertas ===== */
+.ms-arm { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: var(--ms-radius-md); background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); }
+.ms-arm.is-armed { background: var(--ms-accent-blue-soft); border-color: var(--ms-accent-blue-border); }
+.ms-arm-ico { width: 38px; height: 38px; border-radius: 10px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--ms-bg-surface-elevated); color: var(--ms-text-muted); }
+.ms-arm-ico svg { width: 20px; height: 20px; }
+.ms-arm.is-armed .ms-arm-ico { background: var(--ms-accent-blue); color: #1a1c2e; }
+.ms-arm-text { flex: 1; min-width: 0; }
+.ms-arm-title { font-size: 13.5px; font-weight: 600; color: var(--ms-text-primary); }
+.ms-arm-sub { font-size: 11.5px; color: var(--ms-text-muted); margin-top: 2px; }
+.ms-arm.is-armed .ms-arm-sub { color: var(--ms-accent-blue); }
+
+.ms-sound-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 2px 4px; font-size: 12.5px; color: var(--ms-text-secondary); }
+.ms-sound-row.is-disabled { opacity: 0.5; }
+
+.ms-watches { border-top: 1px solid var(--ms-border-subtle); }
+.ms-watch-empty { font-size: 12.5px; color: var(--ms-text-muted); padding: 16px 0; text-align: center; }
+.ms-watch { display: flex; gap: 11px; padding: 13px 0; align-items: flex-start; }
+.ms-watch.has-sep { border-top: 1px solid rgba(60, 64, 67, 0.5); }
+.ms-watch.is-blocked { opacity: 0.55; }
+.ms-watch-ico { width: 32px; height: 32px; border-radius: 9px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--ms-bg-surface-elevated); color: var(--ms-text-secondary); border: 1px solid var(--ms-border-subtle); }
+.ms-watch-ico svg { width: 17px; height: 17px; }
+.ms-watch-ico.is-ai { background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); border-color: var(--ms-accent-blue-border); }
+.ms-watch-main { flex: 1; min-width: 0; }
+.ms-watch-label { font-size: 13px; font-weight: 600; color: var(--ms-text-primary); line-height: 1.35; display: flex; align-items: center; gap: 7px; }
+.ms-watch-badge { font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ms-text-muted); border: 1px solid var(--ms-border-subtle); border-radius: 999px; padding: 1px 6px; }
+.ms-watch-desc { font-size: 12px; color: var(--ms-text-muted); margin-top: 3px; line-height: 1.45; }
+.ms-watch-terms { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.ms-term { font-size: 11.5px; color: var(--ms-text-secondary); background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-border-subtle); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.ms-watch-warn { font-size: 11px; color: var(--ms-warning-yellow); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.ms-watch-sim { margin-top: 9px; display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent; color: var(--ms-accent-blue); cursor: pointer; font-family: var(--ms-font); font-size: 12px; font-weight: 500; padding: 2px 0; }
+.ms-watch-sim.is-disabled { color: var(--ms-text-muted); cursor: not-allowed; }
+.ms-watch-sim svg { width: 14px; height: 14px; }
+.ms-watch-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex: none; }
+.ms-watch-trash { border: none; background: transparent; color: var(--ms-text-muted); cursor: pointer; display: flex; padding: 2px; }
+.ms-watch-trash svg { width: 15px; height: 15px; }
+.ms-watch-trash:hover { color: var(--ms-danger-red); }
+
+.ms-alseg { display: flex; gap: 4px; background: var(--ms-bg-app); border-radius: 10px; padding: 4px; border: 1px solid var(--ms-border-subtle); }
+.ms-alseg-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 10px; border-radius: 7px; border: none; cursor: pointer; font-family: var(--ms-font); font-size: 12.5px; font-weight: 500; background: transparent; color: var(--ms-text-secondary); }
+.ms-alseg-btn.is-sel { background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); }
+.ms-alseg-ico { display: inline-flex; }
+.ms-alseg-ico svg { width: 15px; height: 15px; }
+.ms-add-help { font-size: 11.5px; color: var(--ms-text-muted); margin-top: 8px; line-height: 1.5; }
+
+.ms-recent { display: flex; flex-direction: column; gap: 8px; }
+.ms-recent-item { text-align: left; display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: pointer; background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); font-family: var(--ms-font); align-items: flex-start; }
+.ms-recent-ico { color: var(--ms-accent-blue); flex: none; margin-top: 1px; display: inline-flex; }
+.ms-recent-ico svg { width: 15px; height: 15px; }
+.ms-recent-body { flex: 1; min-width: 0; }
+.ms-recent-reason { display: block; font-size: 12px; font-weight: 600; color: var(--ms-text-primary); }
+.ms-recent-snip { display: block; font-size: 11.5px; color: var(--ms-text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ms-recent-t { font-size: 11px; color: var(--ms-text-muted); flex: none; }
+
+/* sininho na barra compacta */
+.ms-bell-btn { position: relative; }
+.ms-bell-ico { display: inline-flex; }
+.ms-bell-ico svg { width: 21px; height: 21px; }
+.ms-bell-btn.is-armed { color: var(--ms-accent-blue); }
+.ms-bell-btn.has-alert .ms-bell-ico { animation: ms-bell-shake 1.2s ease-in-out infinite; transform-origin: 50% 4px; }
+.ms-bell-badge { position: absolute; top: -2px; right: -2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px; background: var(--ms-danger-red-strong); color: #fff; font-size: 9px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+
+/* badge na aba Alertas */
+.ms-tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 15px; height: 15px; padding: 0 3px; margin-left: 5px; border-radius: 999px; background: var(--ms-danger-red-strong); color: #fff; font-size: 9px; font-weight: 700; line-height: 1; }
+
+/* ===== Banner de alerta (overlay) ===== */
+.ms-ov { position: fixed; left: 50%; top: 18px; transform: translateX(-50%); width: min(440px, calc(100vw - 32px)); z-index: 2147483001; pointer-events: auto; }
+.ms-ov-card { background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-accent-blue-border); border-radius: 16px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55); overflow: hidden; animation: ms-alert-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ms-ov-strip { height: 3px; background: linear-gradient(90deg, var(--ms-accent-blue), var(--ms-accent-blue-strong)); }
+.ms-ov-inner { padding: 16px 16px 14px; }
+.ms-ov-head { display: flex; align-items: center; gap: 11px; margin-bottom: 13px; }
+.ms-ov-bellwrap { position: relative; width: 38px; height: 38px; flex: none; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); }
+.ms-ov-ring { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--ms-accent-blue); animation: ms-ring-ping 1.4s ease-out infinite; }
+.ms-ov-bellico { display: inline-flex; animation: ms-bell-shake 1.2s ease-in-out infinite; transform-origin: 50% 4px; }
+.ms-ov-bellico svg { width: 20px; height: 20px; }
+.ms-ov-headtext { flex: 1; min-width: 0; }
+.ms-ov-eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ms-accent-blue); }
+.ms-ov-reason { font-size: 14px; font-weight: 600; color: var(--ms-text-primary); margin-top: 1px; }
+.ms-ov-close { border: none; background: transparent; color: var(--ms-text-muted); cursor: pointer; display: flex; padding: 4px; flex: none; }
+.ms-ov-close svg { width: 16px; height: 16px; }
+.ms-ov-snip { display: flex; gap: 10px; padding: 11px 12px; border-radius: 12px; background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); }
+.ms-ov-avatar { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 600; }
+.ms-ov-snipbody { flex: 1; min-width: 0; }
+.ms-ov-sniptop { display: flex; align-items: center; gap: 8px; }
+.ms-ov-who { font-size: 12.5px; font-weight: 600; color: var(--ms-text-primary); white-space: nowrap; }
+.ms-ov-time { font-size: 11px; color: var(--ms-text-muted); margin-left: auto; }
+.ms-ov-text { font-size: 13px; color: var(--ms-text-secondary); line-height: 1.5; margin-top: 3px; }
+.ms-ov-actions { display: flex; gap: 8px; margin-top: 13px; }
+
 /* Linha do intervalo do resumo */
 .ms-interval-row {
   display: flex;
@@ -674,12 +768,13 @@ button {
 .ms-strip-label { font-size: 12px; color: var(--ms-text-secondary); white-space: nowrap; }
 
 /* tabs (override) */
-.ms-tabs { padding: 0 6px; }
-.ms-tab { position: relative; display: flex; align-items: center; gap: 6px; padding: 12px 11px; border: none; background: transparent; color: var(--ms-text-secondary); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.ms-tabs { padding: 0 4px; overflow-x: auto; scrollbar-width: none; }
+.ms-tabs::-webkit-scrollbar { display: none; }
+.ms-tab { position: relative; display: flex; align-items: center; gap: 4px; padding: 12px 7px; border: none; background: transparent; color: var(--ms-text-secondary); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
 .ms-tab.is-active { color: var(--ms-accent-blue); font-weight: 600; }
 .ms-tab-underline { position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--ms-accent-blue); transform: scaleX(0); transform-origin: center; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .ms-tab.is-active .ms-tab-underline { transform: scaleX(1); }
-.ms-tab-beta { font-size: 8.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ms-accent-blue); background: var(--ms-accent-blue-soft); border: 1px solid var(--ms-accent-blue-border); border-radius: 999px; padding: 1px 5px; }
+.ms-tab-beta { font-size: 8px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ms-accent-blue); background: var(--ms-accent-blue-soft); border: 1px solid var(--ms-accent-blue-border); border-radius: 999px; padding: 1px 4px; }
 
 /* tab wrappers */
 .ms-tabwrap { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
@@ -688,8 +783,10 @@ button {
 .ms-jump svg { width: 14px; height: 14px; fill: currentColor; transform: rotate(90deg); }
 
 /* realtime bar */
-.ms-rt-bar { padding: 12px 16px; border-bottom: 1px solid var(--ms-border-subtle); background: var(--ms-bg-app); }
+.ms-rt-bar { padding: 12px 16px; border-bottom: 1px solid var(--ms-border-subtle); }
 .ms-rt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ms-rt-head .ms-toggle-main { font-size: var(--ms-fs-base); font-weight: 600; color: var(--ms-text-primary); }
+.ms-rt-head .ms-toggle-help { font-size: var(--ms-fs-sm); color: var(--ms-text-secondary); margin-top: 2px; }
 .ms-rt-interval { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 
 /* pills */

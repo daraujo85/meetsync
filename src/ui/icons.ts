@@ -2,7 +2,27 @@
 const wrap = (path: string) =>
   `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;
 
+// Ícones de traço (line icons do mockup da aba Alertas) e de preenchimento.
+const stroke = (inner: string) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const solid = (inner: string) => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">${inner}</svg>`;
+
 export const icons = {
+  bell: stroke('<path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/>'),
+  bellRing: stroke(
+    '<path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/><path d="M20.5 5.5c.9 1 1.5 2.3 1.5 3.7M3.5 5.5C2.6 6.5 2 7.8 2 9.2"/>',
+  ),
+  bellOff: stroke(
+    '<path d="M9 8a6 6 0 019-4M18 8c0 7 3 9 3 9H8M4 4l16 16M5.2 9.2C5 13 3 15 3 15h2"/><path d="M13.7 21a2 2 0 01-3.4 0"/>',
+  ),
+  ear: stroke('<path d="M6 8.5a6 6 0 1112 0c0 3-2 4-3.2 5.2C13.8 14.7 13 15.5 13 17a2.5 2.5 0 01-5 .2M9 9a3 3 0 016 0"/>'),
+  quote: solid('<path d="M7 7h4v6H5v-2a4 4 0 012-4zM17 7h-4v6h6v-2a4 4 0 00-2-4z" opacity="0.85"/>'),
+  sparkles: solid(
+    '<path d="M12 3l1.8 4.9L18.7 9.7l-4.9 1.8L12 16.4l-1.8-4.9L5.3 9.7l4.9-1.8z"/><path d="M18.5 14.5l.7 1.9 1.9.7-1.9.7-.7 1.9-.7-1.9-1.9-.7 1.9-.7z"/>',
+  ),
+  trash: stroke('<path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/>'),
+  plus: stroke('<path d="M12 5v14M5 12h14" stroke-width="2"/>'),
+  video: solid('<rect x="3" y="7" width="12" height="10" rx="2.5"/><path d="M15 10.5l5-2.5v8l-5-2.5z"/>'),
   expand: wrap('M15 18l-6-6 6-6v12z'), // chevron-left (abrir painel à esquerda)
   collapse: wrap('M9 6l6 6-6 6V6z'), // chevron-right (recolher)
   chevronLeft: wrap('M15 18l-6-6 6-6v12z'),

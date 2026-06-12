@@ -5,7 +5,8 @@
 import { el } from './dom';
 import { icons } from './icons';
 import { logoImg } from './logo';
-import { store, type AppState } from '@/services/store';
+import { store, cryptoRandomId, type AppState } from '@/services/store';
+import type { AlertDetection, AlertMode } from '@/types';
 import {
   buildTxt,
   buildSummaryTxt,
@@ -22,11 +23,14 @@ import { initials } from '@/content/participant-resolver';
 export type PanelController = {
   /** Liga/desliga as legendas do Meet (botão CC). */
   toggleCaptions: () => void;
+  /** Dispara um alerta de teste a partir de uma regra ("Simular detecção"). */
+  simulateAlert: (detection: AlertDetection) => void;
 };
 
-type TabId = 'transcript' | 'summary' | 'export' | 'upload';
+type TabId = 'transcript' | 'summary' | 'alerts' | 'export' | 'upload';
 const TABS: Array<{ id: TabId; label: string; beta?: boolean }> = [
   { id: 'transcript', label: 'Transcrição' },
+  { id: 'alerts', label: 'Alertas' },
   { id: 'summary', label: 'Resumo' },
   { id: 'export', label: 'Exportar' },
   { id: 'upload', label: 'Upload', beta: true },
@@ -199,6 +203,38 @@ export class Panel {
   private summaryContent!: HTMLElement;
   private renderedSummary = '';
 
+  // alerts (menções) — modelo de regras do mockup
+  private tgArmed!: ReturnType<typeof makeToggle>;
+  private tgSound!: ReturnType<typeof makeToggle>;
+  private armCard!: HTMLElement;
+  private armIcon!: HTMLElement;
+  private armSub!: HTMLElement;
+  private soundRow!: HTMLElement;
+  private watchesWrap!: HTMLElement;
+  private addInput!: HTMLInputElement;
+  private addHelp!: HTMLElement;
+  private addMode: AlertMode = 'keyword';
+  private addSegBtns = new Map<AlertMode, HTMLButtonElement>();
+  private recentSection!: HTMLElement;
+  private recentWrap!: HTMLElement;
+  private alertsTabBadge: HTMLElement | null = null;
+  private lastWatchSig = '';
+  private lastRecentSig = '';
+  // overlay (banner)
+  private alertOverlay!: HTMLElement;
+  private ovBell!: HTMLElement;
+  private ovEyebrow!: HTMLElement;
+  private ovReason!: HTMLElement;
+  private ovAvatar!: HTMLElement;
+  private ovWho!: HTMLElement;
+  private ovTime!: HTMLElement;
+  private ovText!: HTMLElement;
+  private lastOvKey = '';
+  // sininho da barra compacta
+  private bellBtn!: HTMLButtonElement;
+  private bellIcon!: HTMLElement;
+  private bellBadge!: HTMLElement;
+
   // export
   private tgAutoStart!: ReturnType<typeof toggleRow>;
   private tgAutoChat!: ReturnType<typeof toggleRow>;
@@ -220,6 +256,12 @@ export class Panel {
   private downloadBtn!: HTMLButtonElement;
   private downloadRawBtn!: HTMLButtonElement;
   private busy = false;
+  /** Impede que a aba navegue (ex.: Meet volta à tela inicial ao encerrar) enquanto a IA processa
+   *  e o download ainda não disparou — senão o arquivo é perdido. */
+  private unloadGuard = (e: BeforeUnloadEvent) => {
+    e.preventDefault();
+    e.returnValue = '';
+  };
 
   // realtime scheduler
   private rtTimer: number | null = null;
@@ -235,7 +277,7 @@ export class Panel {
 
   mount(root: ShadowRoot) {
     const container = el('div', { class: 'ms-root' });
-    container.append(this.buildCompact(), this.buildPanel());
+    container.append(this.buildCompact(), this.buildPanel(), this.buildAlertOverlay());
     root.append(container);
 
     this.unsub = store.subscribe((s) => this.update(s));
@@ -269,11 +311,17 @@ export class Panel {
     const dlBtn = el('button', { class: 'ms-icon-btn', title: 'Baixar transcrição (.txt)', 'aria-label': 'Baixar', html: icons.download });
     dlBtn.addEventListener('click', () => this.quickDownload());
 
+    // Sininho de alertas (abre a aba Alertas; mostra estado de arme + não-lidos).
+    this.bellIcon = el('span', { class: 'ms-bell-ico', html: icons.bellOff });
+    this.bellBadge = el('span', { class: 'ms-bell-badge ms-hidden' });
+    this.bellBtn = el('button', { class: 'ms-icon-btn ms-bell-btn', title: 'Alertas de menção', 'aria-label': 'Alertas' }, [this.bellIcon, this.bellBadge]) as HTMLButtonElement;
+    this.bellBtn.addEventListener('click', () => { store.patchUi({ expanded: true, activeTab: 'alerts' }); store.clearAlertUnread(); });
+
     this.compactDot = el('span', { class: 'ms-dot' });
     this.compactDotLabel = el('span', { text: 'Pausado' });
     const dot = el('div', { class: 'ms-capture-dot' }, [this.compactDot, this.compactDotLabel]);
 
-    this.compact = el('div', { class: 'ms-compact' }, [logo, expandBtn, this.ccBtn, dlBtn, el('div', { class: 'ms-divider' }), dot]);
+    this.compact = el('div', { class: 'ms-compact' }, [logo, expandBtn, this.ccBtn, dlBtn, this.bellBtn, el('div', { class: 'ms-divider' }), dot]);
     return this.compact;
   }
 
@@ -286,6 +334,7 @@ export class Panel {
     const body = el('div', { class: 'ms-body' }, [
       this.buildTranscriptTab(),
       this.buildSummaryTab(),
+      this.buildAlertsTab(),
       this.buildExportTab(),
       this.buildUploadTab(),
     ]);
@@ -327,6 +376,10 @@ export class Panel {
     for (const t of TABS) {
       const btn = el('button', { class: 'ms-tab', type: 'button' }, [el('span', { text: t.label })]) as HTMLButtonElement;
       if (t.beta) btn.append(el('span', { class: 'ms-tab-beta', text: 'beta' }));
+      if (t.id === 'alerts') {
+        this.alertsTabBadge = el('span', { class: 'ms-tab-count ms-hidden' });
+        btn.append(this.alertsTabBadge);
+      }
       btn.append(el('span', { class: 'ms-tab-underline' }));
       btn.addEventListener('click', () => store.patchUi({ activeTab: t.id }));
       this.tabBtns.set(t.id, btn);
@@ -401,6 +454,236 @@ export class Panel {
     );
     this.intervalPills.parentElement?.classList.toggle('ms-hidden', !s.settings.realtimeSummary);
   }
+
+  // ---------- aba Alertas (menções) ----------
+  private buildAlertsTab(): HTMLElement {
+    // Barra "Monitorar a reunião" (toggle mestre)
+    this.tgArmed = makeToggle((v) => void store.updateSettings({ alertsArmed: v }));
+    this.armIcon = el('span', { class: 'ms-arm-ico' });
+    this.armSub = el('div', { class: 'ms-arm-sub' });
+    this.armCard = el('div', { class: 'ms-arm' }, [
+      this.armIcon,
+      el('div', { class: 'ms-arm-text' }, [el('div', { class: 'ms-arm-title', text: 'Monitorar a reunião' }), this.armSub]),
+      this.tgArmed.el,
+    ]);
+
+    // Som
+    this.tgSound = makeToggle((v) => void store.updateSettings({ alertSound: v }));
+    this.soundRow = el('div', { class: 'ms-sound-row' }, [el('span', { text: 'Tocar som ao alertar' }), this.tgSound.el]);
+
+    // Lista de regras
+    this.watchesWrap = el('div', { class: 'ms-watches' });
+
+    // Adicionar expressão (segmented + input)
+    const seg = el('div', { class: 'ms-alseg' });
+    ([['keyword', 'Palavra / frase', 'quote'], ['ai', 'IA por contexto', 'sparkles']] as const).forEach(([m, label, icon]) => {
+      const b = el('button', { class: 'ms-alseg-btn', type: 'button' }, [
+        el('span', { class: 'ms-alseg-ico', html: icons[icon] }),
+        el('span', { text: label }),
+      ]) as HTMLButtonElement;
+      b.addEventListener('click', () => { this.addMode = m; this.syncAddMode(); });
+      this.addSegBtns.set(m, b);
+      seg.append(b);
+    });
+    this.addInput = el('input', { class: 'ms-input', type: 'text', 'aria-label': 'Nova expressão' }) as HTMLInputElement;
+    const addBtn = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button' }, [
+      el('span', { class: 'ms-btn-ico', html: icons.plus }),
+      el('span', { text: 'Adicionar' }),
+    ]);
+    const submit = () => {
+      const v = this.addInput.value.trim();
+      if (!v) return;
+      const cur = store.get().settings.alertWatches;
+      const watch = this.addMode === 'keyword'
+        ? { id: cryptoRandomId(), mode: 'keyword' as const, label: 'Palavra ou frase', terms: v.split(',').map((t) => t.trim()).filter(Boolean), enabled: true }
+        : { id: cryptoRandomId(), mode: 'ai' as const, label: 'Contexto monitorado', desc: v, enabled: true };
+      void store.updateSettings({ alertWatches: [...cur, watch] });
+      this.addInput.value = '';
+    };
+    addBtn.addEventListener('click', submit);
+    this.addInput.addEventListener('keydown', (e) => { if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); submit(); } });
+    this.addHelp = el('div', { class: 'ms-add-help' });
+
+    // Detecções recentes
+    this.recentWrap = el('div', { class: 'ms-recent' });
+    this.recentSection = el('div', { class: 'ms-section ms-hidden' }, [this.sectionLabel('Detecções recentes', icons.clock), this.recentWrap]);
+
+    this.syncAddMode();
+
+    const scroll = el('div', { class: 'ms-tabpanel ms-scroll' }, [
+      this.armCard,
+      this.soundRow,
+      el('div', { class: 'ms-section' }, [this.sectionLabel('Expressões monitoradas', icons.bell), this.watchesWrap]),
+      el('div', { class: 'ms-section' }, [
+        this.sectionLabel('Adicionar expressão', icons.plus),
+        seg,
+        el('div', { class: 'ms-row-gap ms-mt-2' }, [el('div', { class: 'ms-grow' }, [this.addInput]), addBtn]),
+        this.addHelp,
+      ]),
+      this.recentSection,
+    ]);
+    this.tabPanels.set('alerts', scroll);
+    return scroll;
+  }
+
+  private syncAddMode() {
+    for (const [m, b] of this.addSegBtns) b.classList.toggle('is-sel', m === this.addMode);
+    this.addInput.placeholder = this.addMode === 'keyword' ? 'ex.: meu nome, orçamento, prazo…' : 'ex.: quando pedirem uma decisão minha';
+    this.addHelp.textContent = this.addMode === 'keyword'
+      ? 'Dispara quando alguém (que não seja você) falar a palavra ou frase. Separe variações por vírgula.'
+      : 'A IA observa o contexto em tempo real e dispara quando o sentido bater — não precisa ser a frase exata.';
+  }
+
+  private renderWatches(s: AppState) {
+    const ws = s.settings.alertWatches;
+    const aiReady = this.ollamaReady(s);
+    const armed = s.settings.alertsArmed;
+    const sig = JSON.stringify(ws.map((w) => [w.id, w.mode, w.label, w.enabled, (w.terms ?? []).join('|'), w.desc])) + `|${aiReady}|${armed}`;
+    if (sig === this.lastWatchSig) return;
+    this.lastWatchSig = sig;
+    if (!ws.length) {
+      this.watchesWrap.replaceChildren(el('div', { class: 'ms-watch-empty', text: 'Nenhuma expressão. Adicione abaixo.' }));
+      return;
+    }
+    this.watchesWrap.replaceChildren(...ws.map((w, i) => this.watchRow(w, i, armed, aiReady)));
+  }
+
+  private watchRow(w: AppState['settings']['alertWatches'][number], i: number, armed: boolean, aiReady: boolean): HTMLElement {
+    const ai = w.mode === 'ai';
+    const blocked = ai && !aiReady;
+
+    const iconBox = el('span', { class: 'ms-watch-ico' + (ai ? ' is-ai' : ''), html: icons[ai ? 'sparkles' : 'quote'] });
+    const head = el('div', { class: 'ms-watch-label' }, [
+      el('span', { text: w.label }),
+      el('span', { class: 'ms-watch-badge', text: ai ? 'IA' : 'frase' }),
+    ]);
+    const body = ai
+      ? el('div', { class: 'ms-watch-desc', text: w.desc ?? '' })
+      : el('div', { class: 'ms-watch-terms' }, (w.terms && w.terms.length)
+          ? w.terms.map((t) => el('span', { class: 'ms-term', text: t }))
+          : [el('div', { class: 'ms-watch-desc', text: 'Sem termos ainda — adicione abaixo.' })]);
+    const main: Array<Node> = [head, body];
+    if (blocked) {
+      main.push(el('div', { class: 'ms-watch-warn' }, [el('span', { class: 'ms-note-ico', html: icons.info }), el('span', { text: 'Requer Ollama configurado na aba Exportar.' })]));
+    }
+    const canSim = armed && !blocked && w.enabled;
+    const sim = el('button', { class: 'ms-watch-sim' + (canSim ? '' : ' is-disabled'), type: 'button' }, [
+      el('span', { class: 'ms-watch-sim-ico', html: icons.bellRing }),
+      el('span', { text: 'Simular detecção' }),
+    ]);
+    if (canSim) sim.addEventListener('click', () => this.controller.simulateAlert(this.demoDetection(w)));
+    main.push(sim);
+
+    const tg = makeToggle((v) => void store.updateSettings({
+      alertWatches: store.get().settings.alertWatches.map((x) => (x.id === w.id ? { ...x, enabled: v } : x)),
+    }));
+    tg.setOn(w.enabled);
+    tg.setDisabled(blocked);
+    const trash = el('button', { class: 'ms-watch-trash', type: 'button', 'aria-label': 'Remover', html: icons.trash });
+    trash.addEventListener('click', () => void store.updateSettings({
+      alertWatches: store.get().settings.alertWatches.filter((x) => x.id !== w.id),
+    }));
+    const right = el('div', { class: 'ms-watch-right' }, [tg.el, trash]);
+
+    return el('div', { class: 'ms-watch' + (blocked ? ' is-blocked' : '') + (i > 0 ? ' has-sep' : '') }, [
+      iconBox,
+      el('div', { class: 'ms-watch-main' }, main),
+      right,
+    ]);
+  }
+
+  private demoDetection(w: AppState['settings']['alertWatches'][number]): AlertDetection {
+    const term = w.terms && w.terms.length ? w.terms[0] : null;
+    return {
+      key: 'sim-' + w.id + '-' + Date.now(),
+      mode: w.mode,
+      label: w.label,
+      reason: w.mode === 'keyword' ? `Mencionaram "${term ?? w.label}"` : `IA · ${w.label}`,
+      who: 'Participante',
+      text: w.mode === 'keyword'
+        ? `…acho que precisamos olhar "${term ?? w.label}" com calma antes de decidir.`
+        : '…isso depende de você, consegue confirmar até amanhã pra gente seguir?',
+      t: 'agora',
+    };
+  }
+
+  private renderRecent(s: AppState) {
+    const r = s.alerts.recent;
+    const sig = r.map((d) => d.key).join(',');
+    if (sig === this.lastRecentSig) return;
+    this.lastRecentSig = sig;
+    this.recentSection.classList.toggle('ms-hidden', r.length === 0);
+    this.recentWrap.replaceChildren(...r.map((d) => {
+      const item = el('button', { class: 'ms-recent-item', type: 'button' }, [
+        el('span', { class: 'ms-recent-ico', html: icons[d.mode === 'ai' ? 'sparkles' : 'bell'] }),
+        el('span', { class: 'ms-recent-body' }, [
+          el('span', { class: 'ms-recent-reason', text: d.reason }),
+          el('span', { class: 'ms-recent-snip', text: d.who ? `${d.who}: "${d.text}"` : d.text }),
+        ]),
+        el('span', { class: 'ms-recent-t', text: d.t }),
+      ]);
+      item.addEventListener('click', () => { store.dismissActiveAlert(); store.clearAlertUnread(); });
+      return item;
+    }));
+  }
+
+  // ---------- Banner de alerta (overlay) ----------
+  private buildAlertOverlay(): HTMLElement {
+    this.ovBell = el('span', { class: 'ms-ov-bellico' });
+    this.ovEyebrow = el('div', { class: 'ms-ov-eyebrow' });
+    this.ovReason = el('div', { class: 'ms-ov-reason' });
+    const closeBtn = el('button', { class: 'ms-ov-close', type: 'button', 'aria-label': 'Dispensar', html: icons.close });
+    closeBtn.addEventListener('click', () => store.dismissActiveAlert());
+
+    this.ovAvatar = el('span', { class: 'ms-ov-avatar' });
+    this.ovWho = el('span', { class: 'ms-ov-who' });
+    this.ovTime = el('span', { class: 'ms-ov-time' });
+    this.ovText = el('div', { class: 'ms-ov-text' });
+
+    const goBtn = el('button', { class: 'ms-btn ms-btn-primary ms-btn-block', type: 'button' }, [
+      el('span', { class: 'ms-btn-ico', html: icons.video }),
+      el('span', { text: 'Ir para a reunião' }),
+    ]);
+    goBtn.addEventListener('click', () => { store.dismissActiveAlert(); store.clearAlertUnread(); store.patchUi({ expanded: false }); });
+    const dismissBtn = el('button', { class: 'ms-btn ms-btn-ghost', type: 'button', text: 'Dispensar' });
+    dismissBtn.addEventListener('click', () => store.dismissActiveAlert());
+
+    const card = el('div', { class: 'ms-ov-card' }, [
+      el('div', { class: 'ms-ov-strip' }),
+      el('div', { class: 'ms-ov-inner' }, [
+        el('div', { class: 'ms-ov-head' }, [
+          el('span', { class: 'ms-ov-bellwrap' }, [el('span', { class: 'ms-ov-ring' }), this.ovBell]),
+          el('div', { class: 'ms-ov-headtext' }, [this.ovEyebrow, this.ovReason]),
+          closeBtn,
+        ]),
+        el('div', { class: 'ms-ov-snip' }, [
+          this.ovAvatar,
+          el('div', { class: 'ms-ov-snipbody' }, [el('div', { class: 'ms-ov-sniptop' }, [this.ovWho, this.ovTime]), this.ovText]),
+        ]),
+        el('div', { class: 'ms-ov-actions' }, [el('div', { class: 'ms-grow' }, [goBtn]), dismissBtn]),
+      ]),
+    ]);
+    this.alertOverlay = el('div', { class: 'ms-ov ms-hidden' }, [card]);
+    return this.alertOverlay;
+  }
+
+  private updateOverlay(s: AppState) {
+    const a = s.alerts.active;
+    this.alertOverlay.classList.toggle('ms-hidden', !a);
+    if (!a) { this.lastOvKey = ''; return; }
+    if (a.key === this.lastOvKey) return;
+    this.lastOvKey = a.key;
+    const ai = a.mode === 'ai';
+    this.ovBell.innerHTML = icons[ai ? 'sparkles' : 'bellRing'];
+    this.ovEyebrow.textContent = ai ? 'Detecção por IA' : 'Alerta da reunião';
+    this.ovReason.textContent = a.reason;
+    this.ovWho.textContent = a.who || '—';
+    this.ovTime.textContent = a.t;
+    this.ovText.textContent = a.text ? `"${a.text}"` : '';
+    this.ovAvatar.replaceChildren(el('span', { text: initials(a.who || '?') }));
+    this.ovAvatar.style.background = avatarColor(a.who || '?');
+  }
+
 
   // ---------- aba Exportar ----------
   private buildExportTab(): HTMLElement {
@@ -604,6 +887,34 @@ export class Panel {
     this.tgSeparate.setOn(s.settings.separateSummaryFile); this.tgSeparate.setDisabled(!ready || !s.settings.includeSummary); this.tgSeparate.setNote(!ready ? 'Requer Ollama configurado.' : (!s.settings.includeSummary ? 'Ative “Incluir resumo / ata” primeiro.' : null));
     this.tgJson.setOn(s.settings.exportJson);
 
+    // Alertas de menção — barra de arme, som, regras, recentes
+    const armed = s.settings.alertsArmed;
+    this.tgArmed.setOn(armed);
+    this.armCard.classList.toggle('is-armed', armed);
+    this.armIcon.innerHTML = icons[armed ? 'ear' : 'bellOff'];
+    this.armSub.textContent = armed ? 'Ouvindo · você será avisado mesmo distraído' : 'Pausado · nenhum alerta será disparado';
+    this.tgSound.setOn(s.settings.alertSound);
+    this.tgSound.setDisabled(!armed);
+    this.soundRow.classList.toggle('is-disabled', !armed);
+    this.renderWatches(s);
+    this.renderRecent(s);
+
+    // Banner + sininho da barra compacta
+    this.updateOverlay(s);
+    this.bellIcon.innerHTML = icons[armed ? 'bell' : 'bellOff'];
+    this.bellBtn.classList.toggle('is-armed', armed);
+    this.bellBtn.classList.toggle('has-alert', s.alerts.unread > 0);
+    this.bellBadge.classList.toggle('ms-hidden', s.alerts.unread === 0);
+    this.bellBadge.textContent = s.alerts.unread > 9 ? '9+' : String(s.alerts.unread);
+    if (this.alertsTabBadge) {
+      this.alertsTabBadge.classList.toggle('ms-hidden', s.alerts.unread === 0);
+      this.alertsTabBadge.textContent = s.alerts.unread > 9 ? '9+' : String(s.alerts.unread);
+    }
+    // Ao visualizar a aba Alertas, zera o não-lido (defere para evitar reentrância no emit).
+    if (s.ui.expanded && s.ui.activeTab === 'alerts' && s.alerts.unread > 0) {
+      queueMicrotask(() => store.clearAlertUnread());
+    }
+
     // Ollama
     if (document.activeElement !== this.ollamaUrlInput && this.ollamaUrlInput.value !== s.settings.ollamaUrl) this.ollamaUrlInput.value = s.settings.ollamaUrl;
     this.renderOllamaStatus(s);
@@ -767,6 +1078,20 @@ export class Panel {
         this.chatNodes.set(e.id, { row, text, time });
       }
     }
+
+    // Ordena cronologicamente por capturedAt. As mensagens de chat só são capturadas quando o
+    // painel de chat abre (tarde), mas carregam o horário real (antigo) — sem isto entrariam fora
+    // de ordem no fim da lista e o começo da reunião "sumiria". Reconcilia o DOM in-place.
+    const ordered = entries
+      .map((e, i) => ({ e, i }))
+      .sort((a, b) => (a.e.capturedAt < b.e.capturedAt ? -1 : a.e.capturedAt > b.e.capturedAt ? 1 : a.i - b.i));
+    ordered.forEach(({ e }, idx) => {
+      const node = this.chatNodes.get(e.id)?.row;
+      if (!node) return;
+      const current = this.chatList.children[idx];
+      if (current !== node) this.chatList.insertBefore(node, current ?? null);
+    });
+
     this.renderTail(s);
     if (this.autoScroll) this.transcriptScroll.scrollTop = this.transcriptScroll.scrollHeight;
   }
@@ -819,6 +1144,7 @@ export class Panel {
     const ready = this.ollamaReady(s);
 
     this.busy = true; this.renderFooter(store.get());
+    window.addEventListener('beforeunload', this.unloadGuard);
     try {
       let corrected = false;
       let correctedText = '';
@@ -849,6 +1175,7 @@ export class Panel {
       if (store.get().captureStatus === 'processing') store.setCaptureStatus(store.get().captionsOn ? 'capturing' : 'waiting');
     } finally {
       this.busy = false; this.renderFooter(store.get());
+      window.removeEventListener('beforeunload', this.unloadGuard);
     }
   }
 

@@ -5,6 +5,8 @@
 // via chrome.tabs.sendMessage para ler o status e alternar o painel.
 
 import { MS_MARK_URL } from '@/ui/logo';
+import { loadLastMeeting, clearLastMeeting, type SavedMeeting } from '@/services/storage-service';
+import { buildTxt, buildFilename, downloadText } from '@/services/export-txt';
 
 const PRIVACY_URL = 'https://daraujo85.github.io/meetsync/privacy.html';
 const MEET_URL = 'https://meet.google.com/';
@@ -65,8 +67,39 @@ function footer(): HTMLElement {
   ]);
 }
 
-function render(body: HTMLElement) {
-  root.replaceChildren(header(), body, footer());
+let savedMeeting: SavedMeeting | null = null;
+
+function render(body: HTMLElement, recovery?: HTMLElement | null) {
+  root.replaceChildren(header(), body, ...(recovery ? [recovery] : []), footer());
+}
+
+function formatWhen(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
+/** Card de recuperação da última reunião salva (rede de segurança contra perda no redirect). */
+function recoveryCard(): HTMLElement | null {
+  const sm = savedMeeting;
+  if (!sm || !sm.session.transcript || sm.session.transcript.length === 0) return null;
+  const sess = sm.session;
+  const title = sess.meetingTitle || sess.meetingCode || 'Reunião';
+  const n = sess.transcript.length;
+
+  const dl = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm', type: 'button', text: 'Baixar .txt' });
+  dl.addEventListener('click', () => downloadText(buildFilename(sess), buildTxt(sess, { includeHeader: true, summaryText: sm.summaryText })));
+  const discard = el('button', { class: 'ms-rec-discard', type: 'button', text: 'Descartar' });
+
+  const card = el('div', { class: 'ms-pop-recovery' }, [
+    el('div', { class: 'ms-rec-title', text: 'Última reunião salva' }),
+    el('div', { class: 'ms-rec-sub', text: `${title} · ${n} fala(s) · ${formatWhen(sm.savedAt)}` }),
+    el('div', { class: 'ms-rec-actions' }, [dl, discard]),
+  ]);
+  discard.addEventListener('click', () => { void clearLastMeeting(); savedMeeting = null; card.remove(); });
+  return card;
 }
 
 /** Estado fora do Google Meet: orienta e oferece atalho para entrar numa reunião. */
@@ -82,6 +115,7 @@ function renderOutsideMeet() {
       el('p', { class: 'ms-pop-msg', text: 'Entre numa reunião para capturar as legendas, ver o chat e exportar a transcrição.' }),
       goBtn,
     ]),
+    recoveryCard(),
   );
 }
 
@@ -92,6 +126,7 @@ function renderMeetIdle() {
       el('p', { class: 'ms-pop-msg', html: 'Você está no <strong>Google Meet</strong>.' }),
       el('p', { class: 'ms-pop-msg', text: 'Entre numa reunião e a captura das legendas começa automaticamente.' }),
     ]),
+    recoveryCard(),
   );
 }
 
@@ -132,6 +167,7 @@ function renderInMeeting(s: StatusReply, tabId: number) {
 }
 
 async function init() {
+  savedMeeting = await loadLastMeeting();
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   // tab.url só é legível para hosts com permissão (temos meet.google.com): basta para
   // identificar positivamente o Meet — qualquer outra aba cai no estado de orientação.

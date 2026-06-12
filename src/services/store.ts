@@ -3,6 +3,7 @@
 
 import {
   DEFAULT_SETTINGS,
+  type AlertDetection,
   type CaptureStatus,
   type MeetingSession,
   type OllamaState,
@@ -14,11 +15,21 @@ import { loadSettings, saveSettings } from './storage-service';
 
 export type UiState = {
   expanded: boolean;
-  activeTab: 'transcript' | 'summary' | 'export' | 'upload';
+  activeTab: 'transcript' | 'summary' | 'alerts' | 'export' | 'upload';
   /** texto do último resumo/ata gerado, para exibir na aba Resumo. */
   summaryText?: string;
   /** true enquanto um resumo está sendo gerado/recebido (streaming). */
   summarizing?: boolean;
+};
+
+/** Estado runtime dos alertas de menção (não persiste). */
+export type AlertsState = {
+  /** detecção atualmente exibida no banner (overlay), ou null. */
+  active: AlertDetection | null;
+  /** histórico recente (mais novo primeiro). */
+  recent: AlertDetection[];
+  /** detecções não vistas (badge no sininho / na aba). */
+  unread: number;
 };
 
 export type AppState = {
@@ -32,6 +43,7 @@ export type AppState = {
   settings: UserSettings;
   ollama: OllamaState;
   ui: UiState;
+  alerts: AlertsState;
 };
 
 type Listener = (state: AppState) => void;
@@ -60,9 +72,11 @@ class Store {
     settings: { ...DEFAULT_SETTINGS },
     ollama: { reachable: false, models: [], testing: false },
     ui: { expanded: false, activeTab: 'transcript' },
+    alerts: { active: null, recent: [], unread: 0 },
   };
 
   private listeners = new Set<Listener>();
+  private entryListeners = new Set<(entry: TranscriptEntry) => void>();
 
   get(): AppState {
     return this.state;
@@ -72,6 +86,12 @@ class Store {
     this.listeners.add(fn);
     fn(this.state);
     return () => this.listeners.delete(fn);
+  }
+
+  /** Notifica cada vez que uma fala é inserida/atualizada (usado pelo monitor de alertas). */
+  onEntry(fn: (entry: TranscriptEntry) => void): () => void {
+    this.entryListeners.add(fn);
+    return () => this.entryListeners.delete(fn);
   }
 
   private emit() {
@@ -127,6 +147,13 @@ class Store {
     this.emit();
   }
 
+  /** Re-entrou na MESMA reunião (rejoin/transiente): retoma a captura SEM zerar a transcrição. */
+  resumeSession() {
+    this.state.inMeeting = true;
+    this.state.ended = false;
+    this.emit();
+  }
+
   /** Reset total ao trocar de reunião / iniciar nova (RF-009, RF-110). */
   resetSession() {
     this.state.session = emptySession();
@@ -160,6 +187,32 @@ class Store {
     this.emit();
   }
 
+  // ---- Alertas de menção ----
+  /** Registra uma detecção: mostra o banner, guarda no histórico e conta não-lidas. */
+  pushAlert(detection: AlertDetection) {
+    const viewing = this.state.ui.expanded && this.state.ui.activeTab === 'alerts';
+    this.state.alerts = {
+      active: detection,
+      recent: [detection, ...this.state.alerts.recent].slice(0, 8),
+      unread: viewing ? 0 : this.state.alerts.unread + 1,
+    };
+    this.emit();
+  }
+
+  /** Dispensa o banner (mantém o histórico). */
+  dismissActiveAlert() {
+    if (!this.state.alerts.active) return;
+    this.state.alerts = { ...this.state.alerts, active: null };
+    this.emit();
+  }
+
+  /** Zera o contador de não-lidas (ao abrir a aba Alertas). */
+  clearAlertUnread() {
+    if (this.state.alerts.unread === 0) return;
+    this.state.alerts = { ...this.state.alerts, unread: 0 };
+    this.emit();
+  }
+
   /** Adiciona ou substitui uma fala. Falas "abertas" são atualizadas in-place pela captura. */
   upsertEntry(entry: TranscriptEntry) {
     const idx = this.state.session.transcript.findIndex((e) => e.id === entry.id);
@@ -170,6 +223,7 @@ class Store {
     }
     this.registerParticipant({ name: entry.participantName, avatarUrl: entry.participantAvatarUrl });
     this.emit();
+    for (const fn of this.entryListeners) fn(entry);
   }
 
   registerParticipant(p: Participant) {
