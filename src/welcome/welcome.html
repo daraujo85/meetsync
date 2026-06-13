@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bem-vindo ao MeetSync</title>
+    <title id="ms-doc-title">Bem-vindo ao MeetSync</title>
     <style>
       :root {
         --bg: #17191c;
@@ -120,32 +120,33 @@
         />
         <div>
           <h1>MeetSync</h1>
-          <p>Transcrição das suas reuniões do Google Meet — direto no navegador.</p>
+          <p id="ms-tagline">Transcrição das suas reuniões do Google Meet — direto no navegador.</p>
         </div>
       </div>
 
       <div class="card">
-        <h2>Como usar</h2>
+        <h2 id="ms-howto">Como usar</h2>
         <ol>
-          <li><strong>Entre numa reunião</strong> no Google Meet. O MeetSync aparece num painel no canto da tela.</li>
-          <li>As <strong>legendas são ligadas automaticamente</strong> e a captura começa — você vê as falas em tempo real, como um chat.</li>
-          <li>Clique no <strong>ícone do MeetSync na barra do Chrome</strong> a qualquer momento para abrir ou recolher o painel.</li>
-          <li>Ao final, <strong>exporte em .txt ou .json</strong>. Opcionalmente, gere correção e resumo com um servidor <strong>Ollama</strong> local.</li>
+          <li id="ms-step1"><strong>Entre numa reunião</strong> no Google Meet. O MeetSync aparece num painel no canto da tela.</li>
+          <li id="ms-step2">As <strong>legendas são ligadas automaticamente</strong> e a captura começa — você vê as falas em tempo real, como um chat.</li>
+          <li id="ms-step3">Clique no <strong>ícone do MeetSync na barra do Chrome</strong> a qualquer momento para abrir ou recolher o painel.</li>
+          <li id="ms-step4">Ao final, <strong>exporte em .txt ou .json</strong>. Opcionalmente, gere correção e resumo com um servidor <strong>Ollama</strong> local.</li>
         </ol>
-        <p class="muted">A captura nunca toca no áudio: o MeetSync apenas lê as legendas que o próprio Meet exibe.</p>
-        <a class="cta" href="https://meet.google.com/">Ir para o Google Meet</a>
-        <p class="priv">
+        <p class="muted" id="ms-capture-note">A captura nunca toca no áudio: o MeetSync apenas lê as legendas que o próprio Meet exibe.</p>
+        <a class="cta" id="ms-cta" href="https://meet.google.com/">Ir para o Google Meet</a>
+        <p class="priv" id="ms-priv">
           🔒 Os dados da reunião ficam no seu navegador. Nada é enviado para serviços externos sem a sua ação.
         </p>
       </div>
 
       <div class="foot">
-        <a href="https://daraujo85.github.io/meetsync/privacy.html" target="_blank" rel="noopener noreferrer"
+        <a id="ms-privacy-link" href="https://daraujo85.github.io/meetsync/privacy.html" target="_blank" rel="noopener noreferrer"
           >Política de privacidade</a
         >
         &nbsp;·&nbsp;
         <a href="https://github.com/daraujo85/meetsync" target="_blank" rel="noopener noreferrer">GitHub</a>
       </div>
     </main>
+    <script type="module" src="./welcome.ts"></script>
   </body>
 </html>

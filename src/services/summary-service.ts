@@ -4,6 +4,7 @@
 import type { MeetingSession } from '@/types';
 import { ollama } from './ollama-client';
 import { buildTranscriptBody, formatTime } from './export-txt';
+import { t } from '@/i18n';
 
 function formatDate(iso?: string): string {
   const d = iso ? new Date(iso) : new Date();
@@ -11,78 +12,23 @@ function formatDate(iso?: string): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
-const CORRECTION_PROMPT = `Você receberá uma transcrição capturada automaticamente do Google Meet (legendas).
-Corrija erros de reconhecimento de fala, pontuação e quebras de frase, preservando fielmente o sentido.
-
-Regras:
-- Não invente informações nem remova falas relevantes.
-- NÃO altere o NOME DO PARTICIPANTE que aparece antes dos dois-pontos (o "Nome:" de cada linha). Corrija apenas o TEXTO falado.
-- Preserve os horários [HH:MM] e o formato de cada linha: [HH:MM] Nome: texto.
-- Mantenha o português do Brasil.
-
-Corrija com atenção especial a NOMES DE PRODUTOS, MARCAS, FERRAMENTAS E TERMOS TÉCNICOS que a
-transcrição automática costuma aportuguesar ou escrever errado — especialmente termos em inglês
-ouvidos como palavras em português. Use a grafia oficial correta. Exemplos do tipo de erro a corrigir:
-- "Cláudio Code" / "Cláudio Código" / "Cláudio" (no contexto de IA/código) → "Claude Code" / "Claude"
-- "guité" / "guírrabe" → "Git" / "GitHub"
-- "paitão" → "Python";  "javascripti" → "JavaScript";  "ó lama" / "olama" → "Ollama"
-- "vsicode" / "VS code" → "VS Code";  "no js" → "Node.js";  "react" → "React"
-Use o CONTEXTO da conversa (assuntos técnicos, dev, IA) para inferir o termo correto. Quando o termo
-claramente se refere a um produto/tecnologia conhecido, prefira a grafia oficial dele.
-{{VOCABULARY}}
-Contexto da reunião (use para entender o tema e desambiguar termos):
-{{MEETING_METADATA}}
-
-IMPORTANTE — formato da resposta:
-- Responda APENAS com a transcrição corrigida, nada além disso.
-- NÃO inclua preâmbulo, saudação, comentários, conclusão nem lista de alterações.
-- NÃO adicione títulos, observações, notas de rodapé ou marcações de markdown.
-- A primeira linha da sua resposta já deve ser a primeira linha da transcrição.
-
-Transcrição:
-{{TRANSCRIPT}}`;
-
-const SUMMARY_PROMPT = `Você receberá a transcrição de uma reunião.
-Gere uma ata objetiva em português do Brasil.
-
-Inclua:
-1. Principais assuntos discutidos.
-2. Decisões identificadas.
-3. Responsáveis mencionados.
-4. Próximos passos.
-5. Pontos de atenção.
-
-Regras:
-- Não invente decisões.
-- Não invente responsáveis.
-- Quando algo não estiver claro, escreva "não identificado na transcrição".
-- Seja direto, profissional e útil.
-
-Dados da reunião:
-{{MEETING_METADATA}}
-{{VOCABULARY}}
-Transcrição:
-{{TRANSCRIPT}}`;
-
 /** Cláusula de vocabulário do negócio injetada nos prompts (vazia se não houver termos). */
 function vocabularyClause(vocabulary?: string[]): string {
-  const terms = (vocabulary ?? []).map((t) => t.trim()).filter(Boolean);
+  const terms = (vocabulary ?? []).map((v) => v.trim()).filter(Boolean);
   if (!terms.length) return '';
-  return `\nVOCABULÁRIO DO NEGÓCIO — nomes de empresas, produtos e siglas do usuário. A transcrição automática
-do Google costuma escrever esses termos errado (ex.: "acme corp" → "AcmeCorp"). Quando uma palavra do
-texto não fizer sentido e se parecer (fonética ou grafia) com um destes, corrija para a grafia EXATA
-abaixo. Use também para entender o contexto. Termos: ${terms.join(', ')}.\n`;
+  return t().ai.vocabularyClause(terms.join(', '));
 }
 
 function meetingMetadata(session: MeetingSession): string {
+  const m = t().ai.meta;
   return [
-    `Reunião: ${session.meetingTitle || 'sem título'}`,
-    `Link: ${session.meetingUrl || '—'}`,
-    `Código: ${session.meetingCode || '—'}`,
-    `Data: ${formatDate(session.captureStartedAt)}`,
-    `Início: ${formatTime(session.captureStartedAt)}`,
-    `Fim: ${session.captureEndedAt ? formatTime(session.captureEndedAt) : '(em andamento)'}`,
-    `Participantes: ${session.participants.map((p) => p.name).join(', ') || '—'}`,
+    `${m.meeting}: ${session.meetingTitle || m.untitled}`,
+    `${m.link}: ${session.meetingUrl || '—'}`,
+    `${m.code}: ${session.meetingCode || '—'}`,
+    `${m.date}: ${formatDate(session.captureStartedAt)}`,
+    `${m.start}: ${formatTime(session.captureStartedAt)}`,
+    `${m.end}: ${session.captureEndedAt ? formatTime(session.captureEndedAt) : m.inProgress}`,
+    `${m.participants}: ${session.participants.map((p) => p.name).join(', ') || '—'}`,
   ].join('\n');
 }
 
@@ -93,16 +39,12 @@ export async function correctTranscript(
   model: string,
   vocabulary?: string[],
 ): Promise<string> {
-  const prompt = CORRECTION_PROMPT.replace('{{VOCABULARY}}', vocabularyClause(vocabulary))
-    .replace('{{MEETING_METADATA}}', meetingMetadata(session))
-    .replace('{{TRANSCRIPT}}', buildTranscriptBody(session));
+  const prompt = t().ai.correctionPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session));
   return ollama.generate(url, model, prompt);
 }
 
 function summaryPrompt(session: MeetingSession, vocabulary?: string[]): string {
-  return SUMMARY_PROMPT.replace('{{VOCABULARY}}', vocabularyClause(vocabulary))
-    .replace('{{MEETING_METADATA}}', meetingMetadata(session))
-    .replace('{{TRANSCRIPT}}', buildTranscriptBody(session));
+  return t().ai.summaryPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session));
 }
 
 /** Gera resumo/ata (RF-095..099). */

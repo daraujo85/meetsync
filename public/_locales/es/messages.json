@@ -1,0 +1,6 @@
+{
+  "name": { "message": "MeetSync" },
+  "description": {
+    "message": "Captura los subtítulos de Google Meet, los muestra como chat y exporta a .txt/.json, con corrección y resumen opcionales vía Ollama."
+  }
+}

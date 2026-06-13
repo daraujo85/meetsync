@@ -10,6 +10,7 @@ import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, type Histor
 import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, downloadText } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting } from '@/services/summary-service';
 import type { UserSettings } from '@/types';
+import { t, bcp47, setLocale, resolveLocale } from '@/i18n';
 
 const PRIVACY_URL = 'https://daraujo85.github.io/meetsync/privacy.html';
 const MEET_URL = 'https://meet.google.com/';
@@ -55,8 +56,8 @@ function header(): HTMLElement {
 
 function footer(): HTMLElement {
   const version = chrome.runtime.getManifest().version;
-  const priv = el('a', { href: PRIVACY_URL, target: '_blank', rel: 'noopener noreferrer', text: 'Privacidade' });
-  const help = el('a', { href: '#', text: 'Ajuda' });
+  const priv = el('a', { href: PRIVACY_URL, target: '_blank', rel: 'noopener noreferrer', text: t().popup.privacy });
+  const help = el('a', { href: '#', text: t().popup.help });
   help.addEventListener('click', (e) => {
     e.preventDefault();
     void chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PATH) });
@@ -88,7 +89,7 @@ async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
   const session = saved.session;
   const original = btn.textContent;
   btn.disabled = true;
-  btn.textContent = 'Processando com Ollama…';
+  btn.textContent = t().popup.processingOllama;
   try {
     let corrected = false;
     let correctedText = '';
@@ -119,7 +120,7 @@ function render(body: HTMLElement, recovery?: HTMLElement | null) {
 
 function formatWhen(iso: string): string {
   try {
-    return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString(bcp47(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   } catch {
     return '';
   }
@@ -178,40 +179,42 @@ function recoveryCard(): HTMLElement | null {
   };
 
   const ai = aiReady();
+  const p = t().popup;
   const actions: Node[] = [];
 
   // Download principal (labeled). Com IA configurada, baixa com correção/resumo.
-  const primary = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm ms-rec-dl', type: 'button', title: ai ? 'Baixar .txt com IA (correção + resumo)' : 'Baixar transcrição (.txt)' }, [
+  const primary = el('button', { class: 'ms-btn ms-btn-primary ms-btn-sm ms-rec-dl', type: 'button', title: ai ? p.dlWithAiTitle : p.dlTxtTitle }, [
     el('span', { class: 'ms-rec-dl-ico', html: icons.download }),
-    el('span', { text: ai ? 'Baixar com IA' : 'Baixar .txt' }),
+    el('span', { text: ai ? p.dlWithAi : p.dlTxt }),
   ]) as HTMLButtonElement;
   primary.addEventListener('click', () => (ai ? void downloadWithAi(last, primary) : downloadRaw()));
   actions.push(primary);
 
   // Sem IA (só-ícone) quando a IA está ligada.
-  if (ai) actions.push(iconBtn(icons.doc, 'Baixar .txt sem IA', downloadRaw));
+  if (ai) actions.push(iconBtn(icons.doc, p.dlWithoutAiTitle, downloadRaw));
 
   // Abrir histórico (só-ícone) — sempre disponível, dentro ou fora do Meet.
-  actions.push(iconBtn(icons.history, `Abrir histórico de reuniões (${history.length})`, () => void openHistoryPanel()));
+  actions.push(iconBtn(icons.history, p.openHistoryTitle(history.length), () => void openHistoryPanel()));
 
   return el('div', { class: 'ms-pop-recovery' }, [
-    el('div', { class: 'ms-rec-title', text: 'Última reunião salva' }),
-    el('div', { class: 'ms-rec-sub', text: `${last.title} · ${last.lines} fala(s) · ${formatWhen(last.savedAt)}` }),
+    el('div', { class: 'ms-rec-title', text: p.lastMeeting }),
+    el('div', { class: 'ms-rec-sub', text: p.recSub(last.title, last.lines, formatWhen(last.savedAt)) }),
     el('div', { class: 'ms-rec-actions' }, actions),
   ]);
 }
 
 /** Estado fora do Google Meet: orienta e oferece atalho para entrar numa reunião. */
 function renderOutsideMeet() {
-  const goBtn = el('button', { class: 'ms-btn ms-btn-primary', type: 'button', text: 'Ir para o Google Meet' });
+  const p = t().popup;
+  const goBtn = el('button', { class: 'ms-btn ms-btn-primary', type: 'button', text: p.goToMeet });
   goBtn.addEventListener('click', () => {
     void chrome.tabs.create({ url: MEET_URL });
     window.close();
   });
   render(
     el('div', { class: 'ms-pop-body' }, [
-      el('p', { class: 'ms-pop-msg', html: 'O MeetSync funciona <strong>dentro do Google Meet</strong>.' }),
-      el('p', { class: 'ms-pop-msg', text: 'Entre numa reunião para capturar as legendas, ver o chat e exportar a transcrição.' }),
+      el('p', { class: 'ms-pop-msg', html: p.outsideMsg1Html }),
+      el('p', { class: 'ms-pop-msg', text: p.outsideMsg2 }),
       goBtn,
     ]),
     recoveryCard(),
@@ -220,29 +223,32 @@ function renderOutsideMeet() {
 
 /** Estado dentro do Meet, mas sem reunião ativa (lobby/início). */
 function renderMeetIdle() {
+  const p = t().popup;
   render(
     el('div', { class: 'ms-pop-body' }, [
-      el('p', { class: 'ms-pop-msg', html: 'Você está no <strong>Google Meet</strong>.' }),
-      el('p', { class: 'ms-pop-msg', text: 'Entre numa reunião e a captura das legendas começa automaticamente.' }),
+      el('p', { class: 'ms-pop-msg', html: p.idleMsg1Html }),
+      el('p', { class: 'ms-pop-msg', text: p.idleMsg2 }),
     ]),
     recoveryCard(),
   );
 }
 
-const STATUS_UI: Record<StatusReply['captureStatus'], { dot: string; label: string }> = {
-  idle: { dot: '', label: 'Parado' },
-  waiting: { dot: 'is-clay', label: 'Aguardando legendas' },
-  capturing: { dot: 'is-rec', label: 'Captura ativa' },
-  processing: { dot: 'is-clay', label: 'Processando (IA)' },
-  error: { dot: 'is-clay', label: 'Erro de IA' },
-};
+function statusUi(): Record<StatusReply['captureStatus'], { dot: string; label: string }> {
+  const p = t().popup;
+  return {
+    idle: { dot: '', label: p.statusIdle },
+    waiting: { dot: 'is-clay', label: p.waitingCaptions },
+    capturing: { dot: 'is-rec', label: p.captureActive },
+    processing: { dot: 'is-clay', label: p.processingAi },
+    error: { dot: 'is-clay', label: p.errorAi },
+  };
+}
 
 /** Estado em reunião (ou pós-reunião): status + atalho para abrir o painel. */
 function renderInMeeting(s: StatusReply, tabId: number) {
-  const sub = s.ended
-    ? `Reunião encerrada · ${s.entries} fala(s)`
-    : `${s.entries} fala(s) · ${s.participants} participante(s)`;
-  const ui = s.ended ? { dot: 'is-clay', label: 'Reunião encerrada' } : STATUS_UI[s.captureStatus];
+  const p = t().popup;
+  const sub = s.ended ? p.meetingEndedSub(s.entries) : p.inMeetingSub(s.entries, s.participants);
+  const ui = s.ended ? { dot: 'is-clay', label: p.meetingEnded } : statusUi()[s.captureStatus];
 
   const status = el('div', { class: 'ms-pop-status' }, [
     el('span', { class: `ms-dot ${ui.dot}`.trim() }),
@@ -255,7 +261,7 @@ function renderInMeeting(s: StatusReply, tabId: number) {
   const openBtn = el('button', {
     class: 'ms-btn ms-btn-primary',
     type: 'button',
-    text: s.expanded ? 'Recolher painel' : 'Abrir painel',
+    text: s.expanded ? p.collapsePanel : p.openPanel,
   });
   openBtn.addEventListener('click', () => {
     chrome.tabs.sendMessage(tabId, { type: 'meetsync:toggle-panel' }, () => void chrome.runtime.lastError);
@@ -267,6 +273,8 @@ function renderInMeeting(s: StatusReply, tabId: number) {
 
 async function init() {
   [history, settings] = await Promise.all([loadHistory(), loadSettings()]);
+  setLocale(resolveLocale(settings.locale));
+  document.documentElement.lang = bcp47();
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   // tab.url só é legível para hosts com permissão (temos meet.google.com): basta para
   // identificar positivamente o Meet — qualquer outra aba cai no estado de orientação.

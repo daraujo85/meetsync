@@ -130,5 +130,44 @@
 <h2>6. Contact</h2>
 <p>Privacy questions: <a href="mailto:contato@devsync.com.br">contato@devsync.com.br</a>.</p>
 
+<hr />
+
+<h1>MeetSync — Política de Privacidad (Español)</h1>
+<p class="muted">Última actualización: 11 de junio de 2026 · Desarrollado por DevSync</p>
+
+<p><strong>MeetSync</strong> es una extensión de Chrome que captura los <strong>subtítulos y mensajes de chat que el propio Google Meet muestra</strong>, los organiza como una conversación y permite exportarlos en archivos <code>.txt</code> y <code>.json</code>. Esta política explica a qué datos accede la extensión y cómo se tratan.</p>
+
+<h2>1. Datos a los que accede la extensión</h2>
+<ul>
+  <li><strong>Texto de los subtítulos y del chat</strong> de la reunión de Google Meet, mientras estás en una reunión y la captura está activa.</li>
+  <li><strong>Metadatos de la reunión</strong> visibles en la página: título, enlace, código, fecha/hora y nombres de los participantes.</li>
+  <li><strong>Tus ajustes</strong> de la extensión (p. ej., URL del servidor Ollama, modelo elegido y preferencias de exportación).</li>
+</ul>
+
+<h2>2. Lo que la extensión NO hace</h2>
+<ul>
+  <li>No captura audio en bruto ni graba la pantalla.</li>
+  <li>No recopila datos de navegación, no usa rastreadores ni herramientas de analytics.</li>
+  <li>No vende, alquila ni comparte tus datos con terceros.</li>
+  <li>No envía el contenido de la reunión a servidores de DevSync ni a ningún servicio externo de forma predeterminada.</li>
+</ul>
+
+<h2>3. Almacenamiento</h2>
+<p>La transcripción de la reunión queda <strong>en tu navegador</strong> (en memoria y/o en <code>chrome.storage.local</code>) y se aísla/descarta al iniciar una nueva reunión. Los archivos exportados (<code>.txt</code>/<code>.json</code>) se guardan localmente, por tu acción, en la carpeta de descargas de tu equipo.</p>
+
+<h2>4. Funciones de IA (Ollama) — opcionales</h2>
+<p>La corrección de la transcripción y la generación de resumen/acta son <strong>opcionales</strong> y solo funcionan si <em>tú</em> configuras y activas un servidor <a href="https://ollama.com" target="_blank" rel="noopener">Ollama</a> (normalmente en <code>http://localhost:11434</code>, en tu propia máquina). Cuando — y solo cuando — activas estas funciones, el contenido de la transcripción se envía a la URL de Ollama que configuraste, para ser procesado. No se envía ningún dato a terceros más allá de ese destino elegido por ti.</p>
+
+<h2>5. Permisos</h2>
+<ul>
+  <li><code>storage</code> — guardar tus ajustes localmente.</li>
+  <li><code>downloads</code> — exportar la transcripción a un archivo.</li>
+  <li>Acceso a <code>meet.google.com</code> — leer los subtítulos/chat mostrados en la reunión.</li>
+  <li>Acceso a <code>localhost</code>/<code>127.0.0.1</code> — comunicarse con Ollama en tu máquina, solo cuando la IA está activa.</li>
+</ul>
+
+<h2>6. Contacto</h2>
+<p>Dudas sobre privacidad: <a href="mailto:contato@devsync.com.br">contato@devsync.com.br</a>.</p>
+
 </body>
 </html>

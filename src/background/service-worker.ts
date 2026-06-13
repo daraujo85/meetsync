@@ -8,6 +8,14 @@ import {
   type OllamaAction,
   type StreamRequest,
 } from '@/services/ollama-client';
+import { loadSettings } from '@/services/storage-service';
+import { t, setLocale, resolveLocale } from '@/i18n';
+
+/** Resolve o idioma a partir das settings salvas (o worker não tem o store em memória). */
+async function ensureLocale(): Promise<void> {
+  const settings = await loadSettings();
+  setLocale(resolveLocale(settings.locale));
+}
 
 // Ações simples (tags/test/generate) via mensagem única.
 chrome.runtime.onMessage.addListener((message: OllamaAction, _sender, sendResponse) => {
@@ -25,24 +33,27 @@ type NotifyMessage = { type: 'meetsync:notify'; kind: 'start' | 'end'; code?: st
 chrome.runtime.onMessage.addListener((message: NotifyMessage) => {
   if (!message || message.type !== 'meetsync:notify') return undefined;
   const iconUrl = chrome.runtime.getURL('public/icons/icon-128.png');
-  if (message.kind === 'start') {
-    void chrome.notifications.create({
-      type: 'basic',
-      iconUrl,
-      title: 'MeetSync — captura iniciada',
-      message: message.code ? `Capturando as legendas de ${message.code}.` : 'Capturando as legendas da reunião.',
-      priority: 0,
-    });
-  } else if (message.kind === 'end') {
-    const n = message.entries ?? 0;
-    void chrome.notifications.create({
-      type: 'basic',
-      iconUrl,
-      title: 'MeetSync — reunião encerrada',
-      message: `Transcrição pronta${n ? ` (${n} fala${n === 1 ? '' : 's'})` : ''}. Abra o painel para revisar e baixar.`,
-      priority: 0,
-    });
-  }
+  void (async () => {
+    await ensureLocale();
+    const n = t().notify;
+    if (message.kind === 'start') {
+      void chrome.notifications.create({
+        type: 'basic',
+        iconUrl,
+        title: n.captureStartedTitle,
+        message: message.code ? n.capturingCode(message.code) : n.capturingMeeting,
+        priority: 0,
+      });
+    } else if (message.kind === 'end') {
+      void chrome.notifications.create({
+        type: 'basic',
+        iconUrl,
+        title: n.meetingEndedTitle,
+        message: n.transcriptReady(message.entries ?? 0),
+        priority: 0,
+      });
+    }
+  })();
   return undefined;
 });
 

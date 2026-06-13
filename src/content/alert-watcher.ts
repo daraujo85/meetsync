@@ -12,6 +12,7 @@
 import { store } from '@/services/store';
 import type { AlertDetection, TranscriptEntry, UserSettings } from '@/types';
 import { ollama } from '@/services/ollama-client';
+import { t, seedWatchText } from '@/i18n';
 
 /** Normaliza para comparação tolerante: minúsculas, sem acento, espaços colapsados. */
 function normalize(s: string): string {
@@ -119,7 +120,7 @@ export class AlertWatcher {
           key: `k-${++this.keySeq}`,
           mode: 'keyword',
           label: w.label,
-          reason: `Mencionaram "${term}"`,
+          reason: t().alerts.demoReasonKeyword(term),
           who: entry.participantName,
           text: snippet(entry.text),
           t: hhmm(entry.capturedAt),
@@ -150,7 +151,7 @@ export class AlertWatcher {
 
     const lines = context.map((e) => `${e.participantName}: ${e.text}`).join('\n');
     const interests = aiWatches.map((w, i) => `${i + 1}. ${w.label}: ${w.desc}`).join('\n');
-    const prompt = buildAiPrompt(interests, lines);
+    const prompt = t().ai.alertPrompt(interests, lines);
 
     this.aiBusy = true;
     try {
@@ -159,11 +160,12 @@ export class AlertWatcher {
       if (verdict?.relevante) {
         const last = context[context.length - 1];
         const matched = aiWatches[(verdict.regra ?? 1) - 1] ?? aiWatches[0];
+        const matchedLabel = (seedWatchText(matched.id)?.label) ?? matched.label;
         this.fire({
           key: `ai-${++this.keySeq}`,
           mode: 'ai',
-          label: matched.label,
-          reason: verdict.motivo ? `IA · ${verdict.motivo}` : `IA · ${matched.label}`,
+          label: matchedLabel,
+          reason: t().alerts.demoReasonAi(verdict.motivo || matchedLabel),
           who: last?.participantName ?? '',
           text: last ? snippet(last.text) : '',
           t: last ? hhmm(last.capturedAt) : '',
@@ -235,23 +237,6 @@ export class AlertWatcher {
 function snippet(text: string): string {
   const t = text.trim();
   return t.length > SNIPPET_MAX ? `${t.slice(0, SNIPPET_MAX - 1)}…` : t;
-}
-
-function buildAiPrompt(interests: string, lines: string): string {
-  return [
-    'Você monitora uma reunião para um participante que NÃO está prestando atenção agora.',
-    'Avise-o apenas quando algo nas falas tocar em um dos interesses abaixo.',
-    '',
-    'Interesses monitorados (numerados):',
-    interests,
-    '',
-    'Falas recentes de outras pessoas na reunião:',
-    lines,
-    '',
-    'Responda SOMENTE com um JSON válido, sem texto antes ou depois, no formato:',
-    '{"relevante": true|false, "regra": <número do interesse que casou ou null>, "motivo": "frase curta em português"}',
-    'Use "relevante": true apenas se as falas realmente tocam em algum interesse.',
-  ].join('\n');
 }
 
 type Verdict = { relevante: boolean; regra?: number; motivo?: string };

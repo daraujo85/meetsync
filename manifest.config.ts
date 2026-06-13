@@ -11,9 +11,12 @@ import pkg from './package.json';
  */
 export default defineManifest({
   manifest_version: 3,
-  name: 'MeetSync',
+  // Nome/descrição localizados via _locales (a Web Store exibe conforme o idioma do usuário).
+  // Os textos vivem em public/_locales/{en,pt_BR,es}/messages.json (achatado para dist/_locales).
+  default_locale: 'en',
+  name: '__MSG_name__',
   version: pkg.version,
-  description: pkg.description,
+  description: '__MSG_description__',
   icons: {
     16: 'public/icons/icon-16.png',
     32: 'public/icons/icon-32.png',

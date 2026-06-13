@@ -2,6 +2,7 @@
 // Blob URL (não exige roteamento pelo background nem APIs extras).
 
 import type { MeetingSession } from '@/types';
+import { t } from '@/i18n';
 
 function pad(n: number): string {
   return n.toString().padStart(2, '0');
@@ -34,26 +35,27 @@ const SEP = '------------------------------------------------------------';
 
 /** Cabeçalho do §6.10 (RF-066). */
 export function buildHeader(session: MeetingSession): string {
+  const f = t().exportFile;
   const participants =
     session.participants.length > 0
       ? session.participants.map((p) => `- ${p.name}`).join('\n')
-      : '- (não identificados)';
+      : `- ${f.notIdentified}`;
 
   const lines = [
-    'MEETSYNC — TRANSCRIÇÃO DA REUNIÃO',
+    f.headerTitle,
     '',
-    `Reunião: ${session.meetingTitle || 'Reunião sem título'}`,
-    `Link: ${session.meetingUrl || '—'}`,
-    `Código: ${session.meetingCode || '—'}`,
-    `Data: ${formatDate(session.captureStartedAt)}`,
-    `Início da captura: ${formatTime(session.captureStartedAt)}`,
-    `Fim da captura: ${formatTime(session.captureEndedAt)}`,
-    `Duração da captura: ${formatDuration(session.captureStartedAt, session.captureEndedAt)}`,
-    'Participantes identificados:',
+    `${f.meeting}: ${session.meetingTitle || f.untitledMeeting}`,
+    `${f.link}: ${session.meetingUrl || '—'}`,
+    `${f.code}: ${session.meetingCode || '—'}`,
+    `${f.date}: ${formatDate(session.captureStartedAt)}`,
+    `${f.captureStart}: ${formatTime(session.captureStartedAt)}`,
+    `${f.captureEnd}: ${formatTime(session.captureEndedAt)}`,
+    `${f.captureDuration}: ${formatDuration(session.captureStartedAt, session.captureEndedAt)}`,
+    `${f.participantsIdentified}:`,
     participants,
     '',
     SEP,
-    'TRANSCRIÇÃO',
+    f.transcriptSection,
     SEP,
     '',
   ];
@@ -62,11 +64,12 @@ export function buildHeader(session: MeetingSession): string {
 
 /** Linhas da transcrição em ordem cronológica (RF-069/070). Inclui falas e mensagens de chat. */
 export function buildTranscriptBody(session: MeetingSession): string {
-  if (session.transcript.length === 0) return '(sem falas capturadas)';
+  const f = t().exportFile;
+  if (session.transcript.length === 0) return f.noCaptions;
   return [...session.transcript]
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
     .map((e) => {
-      const tag = e.source === 'google-meet-chat' ? ' (chat)' : '';
+      const tag = e.source === 'google-meet-chat' ? ` (${f.chatTag})` : '';
       return `[${formatTime(e.capturedAt)}] ${e.participantName}${tag}: ${e.text}`;
     })
     .join('\n');
@@ -82,18 +85,19 @@ export function buildTxt(session: MeetingSession, opts: ExportOptions): string {
   if (opts.includeHeader) parts.push(buildHeader(session));
   parts.push(buildTranscriptBody(session));
   if (opts.summaryText) {
-    parts.push('', SEP, 'RESUMO / ATA', SEP, '', opts.summaryText);
+    parts.push('', SEP, t().exportFile.summarySection, SEP, '', opts.summaryText);
   }
   return parts.join('\n');
 }
 
 export function buildSummaryTxt(session: MeetingSession, summaryText: string): string {
+  const f = t().exportFile;
   const lines = [
-    'MEETSYNC — RESUMO / ATA DA REUNIÃO',
+    f.summaryHeaderTitle,
     '',
-    `Reunião: ${session.meetingTitle || 'Reunião sem título'}`,
-    `Data: ${formatDate(session.captureStartedAt)}`,
-    `Link: ${session.meetingUrl || '—'}`,
+    `${f.meeting}: ${session.meetingTitle || f.untitledMeeting}`,
+    `${f.date}: ${formatDate(session.captureStartedAt)}`,
+    `${f.link}: ${session.meetingUrl || '—'}`,
     '',
     summaryText,
   ];
@@ -104,7 +108,7 @@ export function buildSummaryTxt(session: MeetingSession, summaryText: string): s
 export function buildFilename(session: MeetingSession, suffix = '', ext = 'txt'): string {
   const d = session.captureStartedAt ? new Date(session.captureStartedAt) : new Date();
   const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
-  const code = session.meetingCode || 'reuniao';
+  const code = session.meetingCode || t().exportFile.filenameMeeting;
   return `MeetSync_${stamp}_${code}${suffix}.${ext}`;
 }
 

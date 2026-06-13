@@ -1,5 +1,7 @@
 // Modelo de dados do MeetSync (§12 do PRD).
 
+import type { Locale } from '@/i18n';
+
 export type Participant = {
   id?: string;
   name: string;
@@ -28,6 +30,8 @@ export type MeetingSession = {
 };
 
 export type UserSettings = {
+  /** Idioma da UI/exportações/IA. undefined → detecta do navegador no primeiro uso. */
+  locale?: Locale;
   autoEnableCaptions: boolean;
   includeHeaderByDefault: boolean;
   ollamaUrl: string;

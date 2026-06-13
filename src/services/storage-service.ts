@@ -4,6 +4,7 @@
 // — sem isto a transcrição se perde antes do download). Tudo fica só local, nada sai do navegador.
 
 import { DEFAULT_SETTINGS, type MeetingSession, type UserSettings } from '@/types';
+import { t } from '@/i18n';
 
 const SETTINGS_KEY = 'meetsync:settings';
 const LAST_MEETING_KEY = 'meetsync:lastMeeting'; // legado (0.3.0) — migrado para o histórico
@@ -69,7 +70,7 @@ function metaFromSession(session: MeetingSession, summaryText: string | undefine
   const first = [...session.transcript].sort((a, b) => (a.capturedAt < b.capturedAt ? -1 : a.capturedAt > b.capturedAt ? 1 : 0))[0];
   return {
     id: session.id,
-    title: session.meetingTitle || session.meetingCode || 'Reunião',
+    title: session.meetingTitle || session.meetingCode || t().history.meetingFallback,
     meetingCode: session.meetingCode,
     savedAt,
     startISO: start,

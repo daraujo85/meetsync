@@ -12,6 +12,7 @@ import {
   type UserSettings,
 } from '@/types';
 import { loadSettings, saveSettings } from './storage-service';
+import { setLocale, resolveLocale } from '@/i18n';
 
 export type UiState = {
   expanded: boolean;
@@ -121,11 +122,14 @@ class Store {
   // ---- Configurações ----
   async initSettings(): Promise<void> {
     this.state.settings = await loadSettings();
+    // Idioma efetivo: o salvo, ou detectado do navegador no primeiro uso.
+    setLocale(resolveLocale(this.state.settings.locale));
     this.emit();
   }
 
   async updateSettings(partial: Partial<UserSettings>): Promise<void> {
     this.state.settings = { ...this.state.settings, ...partial };
+    if (partial.locale) setLocale(partial.locale);
     this.emit();
     await saveSettings(this.state.settings);
   }
