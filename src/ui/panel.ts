@@ -1228,7 +1228,10 @@ export class Panel {
           el('div', { class: 'ms-hist-pv-foot', text: hi.previewFoot(m.lines) }),
         );
       } else {
-        previewBox.replaceChildren(el('div', { class: 'ms-hist-pv-summary', text: summaryText ?? hi.noAtaGenerated }));
+        const box = el('div', { class: 'ms-hist-pv-summary ms-summary' });
+        if (summaryText) renderMarkdownInto(box, summaryText);
+        else box.textContent = hi.noAtaGenerated;
+        previewBox.replaceChildren(box);
       }
     };
     const seg = el('div', { class: 'ms-hist-d-seg' });
