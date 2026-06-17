@@ -1,0 +1,34 @@
+{
+  "milestones": [
+    {
+      "id": "fix-correcao-ia-nao-resume",
+      "title": "Guard: correção IA não pode resumir (preserva transcrição)",
+      "status": "done"
+    },
+    {
+      "id": "participantes-ordem-alfabetica",
+      "title": "Participantes em ordem alfabética (.txt e .json)",
+      "status": "done"
+    },
+    {
+      "id": "trocar-modelo-ollama",
+      "title": "Trocar Ollama llama3.2:3b → llama3.1:8b",
+      "status": "done"
+    },
+    {
+      "id": "release-0-4-2",
+      "title": "Release 0.4.2 (build, zip, commit, push)",
+      "status": "done"
+    },
+    {
+      "id": "avisar-lucas-modelo",
+      "title": "Avisar Lucas pra atualizar o modelo LLM",
+      "status": "done"
+    },
+    {
+      "id": "publicar-chrome-web-store",
+      "title": "Publicar 0.4.2 na Chrome Web Store",
+      "status": "todo"
+    }
+  ]
+}
