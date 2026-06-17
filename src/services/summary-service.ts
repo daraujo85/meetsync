@@ -32,15 +32,33 @@ function meetingMetadata(session: MeetingSession): string {
   ].join('\n');
 }
 
-/** Corrige a transcrição. Retorna o texto corrigido (RF-085/086). */
+/** Conta as marcações de horário "[HH:MM]" — uma por linha de fala/chat. */
+function countTimestamps(text: string): number {
+  return (text.match(/\[\d{1,2}:\d{2}\]/g) ?? []).length;
+}
+
+/** Corrige a transcrição. Retorna o texto corrigido (RF-085/086).
+ *
+ * Modelos pequenos (ex.: llama3.2:3b) às vezes ignoram a instrução "apenas corrija"
+ * e devolvem um RESUMO em prosa, descartando as falas — o que apagaria a transcrição
+ * inteira do arquivo exportado. Como a correção tem de preservar as linhas
+ * `[HH:MM] Nome: ...`, se a saída perdeu a maioria desses horários consideramos que o
+ * modelo resumiu e devolvemos a transcrição original (intacta) em vez do "resumo". */
 export async function correctTranscript(
   session: MeetingSession,
   url: string,
   model: string,
   vocabulary?: string[],
 ): Promise<string> {
-  const prompt = t().ai.correctionPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session));
-  return ollama.generate(url, model, prompt);
+  const original = buildTranscriptBody(session);
+  const prompt = t().ai.correctionPrompt(vocabularyClause(vocabulary), meetingMetadata(session), original);
+  const corrected = await ollama.generate(url, model, prompt);
+
+  const origStamps = countTimestamps(original);
+  if (origStamps >= 3 && countTimestamps(corrected) < origStamps * 0.5) {
+    return original; // o modelo resumiu em vez de corrigir — preserva a transcrição
+  }
+  return corrected;
 }
 
 function summaryPrompt(session: MeetingSession, vocabulary?: string[]): string {

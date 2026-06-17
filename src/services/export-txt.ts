@@ -38,7 +38,10 @@ export function buildHeader(session: MeetingSession): string {
   const f = t().exportFile;
   const participants =
     session.participants.length > 0
-      ? session.participants.map((p) => `- ${p.name}`).join('\n')
+      ? [...session.participants]
+          .sort((a, b) => a.name.localeCompare(b.name, 'pt', { sensitivity: 'base' }))
+          .map((p) => `- ${p.name}`)
+          .join('\n')
       : `- ${f.notIdentified}`;
 
   const lines = [
@@ -120,7 +123,9 @@ export function buildMeetingJson(session: MeetingSession, summaryText?: string):
     meetingCode: session.meetingCode,
     captureStartedAt: session.captureStartedAt ?? null,
     captureEndedAt: session.captureEndedAt ?? null,
-    participants: session.participants.map((p) => p.name),
+    participants: [...session.participants]
+      .map((p) => p.name)
+      .sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' })),
     transcript: [...session.transcript]
       .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
       .map((e) => ({
