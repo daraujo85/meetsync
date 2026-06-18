@@ -26,7 +26,9 @@ if (!existsSync(zip)) {
   process.exit(1);
 }
 
-const required = ['EXTENSION_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'REFRESH_TOKEN', 'PUBLISHER_ID'];
+// PUBLISHER_ID só é necessário para publicar em nome de um publisher de grupo/domínio;
+// para conta individual não é exigido (passado adiante se existir).
+const required = ['EXTENSION_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'REFRESH_TOKEN'];
 const missing = required.filter((k) => !process.env[k]);
 if (missing.length) {
   console.error(`✗ Faltam variáveis de ambiente: ${missing.join(', ')} (veja RELEASING.md).`);

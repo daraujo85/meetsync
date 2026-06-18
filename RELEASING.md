@@ -44,14 +44,15 @@ como **secrets** no GitHub (Settings → Secrets and variables → Actions):
      e-mail como usuário de teste).
    - **Credentials → Create credentials → OAuth client ID → tipo "Desktop app".**
      Guarde o **Client ID** e o **Client secret**.
-3. **Refresh token** (uma vez): siga o guia do
-   [`chrome-webstore-upload-keys`](https://github.com/fregante/chrome-webstore-upload-keys):
+3. **Refresh token** (uma vez): com o Client ID/secret do passo 2, rode o helper do repo
+   (faz o fluxo de loopback e imprime o token):
    ```bash
-   npx chrome-webstore-upload-keys
+   node scripts/get-refresh-token.mjs <CLIENT_ID> <CLIENT_SECRET>
    ```
-   Ele abre o navegador, você autoriza com a conta de desenvolvedor e ele imprime o
-   `refresh_token`.
-4. Salve os 4 valores como secrets `CWS_*` no GitHub (tabela acima).
+   Ele abre o navegador; **autorize com a conta que gerencia o MeetSync na store**. Requer
+   a tela de consentimento **publicada (Em produção)** — senão dá `403 access_denied`.
+   (Alternativa: `npx chrome-webstore-upload-keys`, que cria um client novo do zero.)
+4. Salve os valores como secrets `CWS_*` no GitHub (tabela acima).
 
 Pronto: a partir daí, todo push de tag `v*` sobe o rascunho sozinho.
 
