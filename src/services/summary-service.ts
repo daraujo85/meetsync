@@ -19,8 +19,18 @@ function vocabularyClause(vocabulary?: string[]): string {
   return t().ai.vocabularyClause(terms.join(', '));
 }
 
+/** Lista completa de participantes: une os participantes registrados com TODOS os falantes
+ *  distintos da transcrição (defesa contra listas incompletas), em ordem alfabética. */
+function allParticipantNames(session: MeetingSession): string[] {
+  const names = new Set<string>();
+  for (const p of session.participants) if (p.name) names.add(p.name);
+  for (const e of session.transcript) if (e.participantName) names.add(e.participantName);
+  return [...names].sort((a, b) => a.localeCompare(b, 'pt', { sensitivity: 'base' }));
+}
+
 function meetingMetadata(session: MeetingSession): string {
   const m = t().ai.meta;
+  const participants = allParticipantNames(session);
   return [
     `${m.meeting}: ${session.meetingTitle || m.untitled}`,
     `${m.link}: ${session.meetingUrl || '—'}`,
@@ -28,7 +38,7 @@ function meetingMetadata(session: MeetingSession): string {
     `${m.date}: ${formatDate(session.captureStartedAt)}`,
     `${m.start}: ${formatTime(session.captureStartedAt)}`,
     `${m.end}: ${session.captureEndedAt ? formatTime(session.captureEndedAt) : m.inProgress}`,
-    `${m.participants}: ${session.participants.map((p) => p.name).join(', ') || '—'}`,
+    `${m.participants} (${participants.length}): ${participants.join(', ') || '—'}`,
   ].join('\n');
 }
 

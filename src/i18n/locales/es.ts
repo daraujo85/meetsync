@@ -408,6 +408,7 @@ Incluye:
 Reglas:
 - No inventes decisiones.
 - No inventes responsables.
+- Los participantes son EXACTAMENTE los listados en "Participantes" en los datos de abajo (todos hablaron). Enuméralos a TODOS en el acta — no omitas a nadie ni lo degrades a "mencionado" por hablar menos.
 - Cuando algo no esté claro, escribe "no identificado en la transcripción".
 - Sé directo, profesional y útil.
 
@@ -424,6 +425,7 @@ Reglas:
 - Básate SOLO en lo que está en la transcripción. NO inventes nada.
 - Si la respuesta no está en la transcripción, di claramente que no se mencionó / no consta en la reunión.
 - Cuando ayude, cita quién habló y/o la hora [HH:MM].
+- Los participantes de la reunión son EXACTAMENTE los listados en "Participantes" abajo (todos hablaron). Si preguntan quién participó, enuméralos a TODOS — no degrades a nadie a "solo mencionado" por hablar menos.
 - La transcripción es automática y puede tener errores de reconocimiento; usa el sentido común.
 ${vocabulary}
 Contexto de la reunión:

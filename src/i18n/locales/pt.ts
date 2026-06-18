@@ -414,6 +414,7 @@ Inclua:
 Regras:
 - Não invente decisões.
 - Não invente responsáveis.
+- Os participantes são EXATAMENTE os listados em "Participantes" nos dados abaixo (todos falaram). Liste TODOS na ata — não omita nem rebaixe ninguém a "mencionado" por ter falado menos.
 - Quando algo não estiver claro, escreva "não identificado na transcrição".
 - Seja direto, profissional e útil.
 
@@ -430,6 +431,7 @@ Regras:
 - Baseie-se SOMENTE no que está na transcrição. NÃO invente nada.
 - Se a resposta não estiver na transcrição, diga claramente que isso não foi falado / não consta na reunião.
 - Quando ajudar, cite quem falou e/ou o horário [HH:MM].
+- Os participantes da reunião são EXATAMENTE os listados em "Participantes" abaixo (todos falaram). Se perguntarem quem participou, liste TODOS eles — não rebaixe ninguém a "apenas mencionado" só porque falou menos.
 - A transcrição é automática e pode ter erros de reconhecimento; interprete com bom senso.
 ${vocabulary}
 Contexto da reunião:

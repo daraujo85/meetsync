@@ -408,6 +408,7 @@ Include:
 Rules:
 - Do not invent decisions.
 - Do not invent owners.
+- The participants are EXACTLY those listed under "Participants" in the data below (they all spoke). List ALL of them in the minutes — do not omit anyone or demote them to "mentioned" for speaking less.
 - When something is unclear, write "not identified in the transcript".
 - Be direct, professional and useful.
 
@@ -424,6 +425,7 @@ Rules:
 - Rely ONLY on what is in the transcript. Do NOT make anything up.
 - If the answer is not in the transcript, clearly say it was not mentioned / is not in the meeting.
 - When helpful, cite who spoke and/or the timestamp [HH:MM].
+- The meeting participants are EXACTLY those listed under "Participants" below (they all spoke). If asked who attended, list ALL of them — do not demote anyone to "merely mentioned" just because they spoke less.
 - The transcript is automatic and may have recognition errors; use common sense.
 ${vocabulary}
 Meeting context:
