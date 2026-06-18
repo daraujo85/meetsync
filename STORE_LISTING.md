@@ -10,7 +10,7 @@
   (ativar GitHub Pages: Settings → Pages → Branch `master`, pasta `/docs`)
 
 ## Descrição curta (≤ 132 caracteres)
-Captura as legendas do Google Meet, exibe em chat e exporta em .txt/.json, com correção e resumo opcionais via Ollama.
+Captura as legendas do Google Meet, exibe em chat e exporta .txt/.json; correção, resumo e perguntas com IA via Ollama.
 
 ## Descrição detalhada
 O MeetSync captura automaticamente as legendas e as mensagens de chat exibidas pelo próprio Google Meet, organiza tudo como uma conversa em ordem cronológica e permite exportar a reunião em .txt e .json — direto no navegador, sem gravar áudio nem tela.
@@ -21,7 +21,8 @@ Recursos:
 • Transcrição em formato de chat: quem falou, quando e o quê, com avatares e links clicáveis.
 • Mensagens do chat de texto entram intercaladas, em ordem cronológica.
 • Alertas de menção: avise-se quando alguém falar seu nome, uma palavra/frase ou (com IA) um assunto de interesse — útil quando você está em outra aba.
-• Histórico de reuniões: biblioteca local com busca para revisitar, baixar e gerenciar transcrições anteriores.
+• Perguntar à reunião: faça perguntas em linguagem natural ("o Lucas falou sobre prazos?") e a IA responde com base na transcrição — na reunião atual ou em qualquer reunião do histórico.
+• Histórico de reuniões: biblioteca local com busca para revisitar, baixar (bruto ou com IA) e gerenciar transcrições anteriores.
 • Exportação em .txt (com cabeçalho opcional) e .json estruturado para automações/agentes de IA.
 • Resumo/ata e correção da transcrição OPCIONAIS, via um servidor Ollama local que você configura.
 • Vocabulário do negócio: cadastre nomes, produtos e siglas para a IA corrigir palavras mal-transcritas.
@@ -56,7 +57,7 @@ Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do
 # Chrome Web Store — MeetSync listing (English)
 
 ## Short description (≤ 132 characters)
-Captures Google Meet captions, shows them as a chat and exports to .txt/.json, with optional AI correction and summary via Ollama.
+Captures Google Meet captions, shows them as a chat and exports to .txt/.json; AI correction, summary and Q&A via Ollama.
 
 ## Detailed description
 MeetSync automatically captures the captions and chat messages that Google Meet already displays, organizes everything as a chronological conversation and lets you export the meeting to .txt and .json — right in the browser, without recording audio or screen.
@@ -67,7 +68,8 @@ Features:
 • Chat-style transcript: who spoke, when and what, with avatars and clickable links.
 • Text chat messages are interleaved in chronological order.
 • Mention alerts: get notified when someone says your name, a word/phrase or (with AI) a topic of interest — handy when you’re in another tab.
-• Meeting history: a local, searchable library to revisit, download and manage past transcripts.
+• Ask the meeting: ask questions in natural language ("did Lucas mention deadlines?") and the AI answers based on the transcript — for the current meeting or any meeting in history.
+• Meeting history: a local, searchable library to revisit, download (raw or with AI) and manage past transcripts.
 • Export as .txt (with optional header) and structured .json for automations / AI agents.
 • OPTIONAL summary/minutes and transcript correction, via a local Ollama server you configure.
 • Business vocabulary: add names, products and acronyms for the AI to fix mis-transcribed words.
@@ -95,7 +97,7 @@ Capture, organize and export the transcript (captions and chat) of Google Meet m
 # Chrome Web Store — ficha de MeetSync (Español)
 
 ## Descripción corta (≤ 132 caracteres)
-Captura los subtítulos de Google Meet, los muestra como chat y exporta a .txt/.json, con corrección y resumen opcionales vía Ollama.
+Captura los subtítulos de Google Meet, los muestra como chat; exporta .txt/.json con corrección, resumen y preguntas IA.
 
 ## Descripción detallada
 MeetSync captura automáticamente los subtítulos y los mensajes de chat que el propio Google Meet muestra, organiza todo como una conversación en orden cronológico y permite exportar la reunión en .txt y .json — directo en el navegador, sin grabar audio ni pantalla.
@@ -106,7 +108,8 @@ Funciones:
 • Transcripción tipo chat: quién habló, cuándo y qué, con avatares y enlaces clicables.
 • Los mensajes del chat de texto se intercalan en orden cronológico.
 • Alertas de mención: entérate cuando alguien diga tu nombre, una palabra/frase o (con IA) un tema de interés — útil cuando estás en otra pestaña.
-• Historial de reuniones: una biblioteca local con búsqueda para revisitar, descargar y gestionar transcripciones anteriores.
+• Preguntar a la reunión: haz preguntas en lenguaje natural ("¿Lucas habló de plazos?") y la IA responde según la transcripción — en la reunión actual o en cualquier reunión del historial.
+• Historial de reuniones: una biblioteca local con búsqueda para revisitar, descargar (en bruto o con IA) y gestionar transcripciones anteriores.
 • Exportación en .txt (con encabezado opcional) y .json estructurado para automatizaciones / agentes de IA.
 • Resumen/acta y corrección de la transcripción OPCIONALES, vía un servidor Ollama local que tú configuras.
 • Vocabulario del negocio: agrega nombres, productos y siglas para que la IA corrija palabras mal transcritas.
@@ -128,3 +131,40 @@ Capturar, organizar y exportar la transcripción (subtítulos y chat) de reunion
 - **host meet.google.com:** leer los subtítulos y el chat mostrados en la página de la reunión — función central de la extensión.
 - **host localhost / 127.0.0.1:** comunicarse, solo cuando el usuario activa la IA, con un servidor Ollama en la propia máquina del usuario, para corrección/resumen de la transcripción.
 - **Uso de datos:** la extensión NO recopila datos de navegación, NO usa analytics y NO comparte/vende datos. El contenido de la reunión solo sale del navegador si el usuario activa la IA, y únicamente hacia la URL de Ollama configurada por él.
+
+---
+
+# Novidades / What's new / Novedades — v0.4.2
+
+## 🇧🇷 Português
+**Novo: Perguntar à reunião 💬**
+- Faça perguntas em linguagem natural sobre a reunião ("o Lucas falou sobre prazos?") e a IA responde com base na transcrição — com conversa contínua (follow-ups).
+- Funciona na reunião atual e em qualquer reunião do histórico.
+
+**Melhorias**
+- Histórico: baixe a transcrição corrigida e o resumo direto de reuniões antigas ("Baixar .txt com IA").
+- Correção por IA mais confiável: se o modelo tentar resumir em vez de corrigir, a transcrição original é preservada (nada se perde).
+- Resumo/ata sempre delimitado por uma seção própria no .txt.
+- Participantes listados de forma completa e em ordem alfabética nas exportações, no resumo e nas respostas.
+
+## 🇺🇸 English
+**New: Ask the meeting 💬**
+- Ask natural-language questions about the meeting ("did Lucas mention deadlines?") and the AI answers based on the transcript — with follow-up conversation.
+- Works for the current meeting and any meeting in history.
+
+**Improvements**
+- History: download the corrected transcript and summary straight from past meetings ("Download .txt with AI").
+- More reliable AI correction: if the model tries to summarize instead of correcting, the original transcript is preserved (nothing is lost).
+- Summary/minutes always delimited by its own section in the .txt.
+- Participants listed completely and alphabetically across exports, summary and answers.
+
+## 🇪🇸 Español
+**Nuevo: Preguntar a la reunión 💬**
+- Haz preguntas en lenguaje natural sobre la reunión ("¿Lucas habló de plazos?") y la IA responde según la transcripción — con conversación de seguimiento.
+- Funciona en la reunión actual y en cualquier reunión del historial.
+
+**Mejoras**
+- Historial: descarga la transcripción corregida y el resumen desde reuniones anteriores ("Descargar .txt con IA").
+- Corrección por IA más confiable: si el modelo intenta resumir en vez de corregir, se conserva la transcripción original (no se pierde nada).
+- Resumen/acta siempre delimitado por su propia sección en el .txt.
+- Participantes listados de forma completa y en orden alfabético en exportaciones, resumen y respuestas.

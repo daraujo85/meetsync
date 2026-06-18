@@ -36,8 +36,13 @@
       "status": "done"
     },
     {
+      "id": "release-0-4-2",
+      "title": "Release 0.4.2: bump, zip e texto da Web Store",
+      "status": "done"
+    },
+    {
       "id": "publicar-chrome-web-store",
-      "title": "Publicar release na Chrome Web Store (sob pedido)",
+      "title": "Subir o zip 0.4.2 na Chrome Web Store (manual do Diego)",
       "status": "todo"
     }
   ]
