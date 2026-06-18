@@ -41,9 +41,14 @@
       "status": "done"
     },
     {
+      "id": "automatizar-publicacao-store",
+      "title": "Automatizar publicação na Web Store (GitHub Actions + CWS API)",
+      "status": "done"
+    },
+    {
       "id": "publicar-chrome-web-store",
-      "title": "Subir o zip 0.4.2 na Chrome Web Store (manual do Diego)",
-      "status": "todo"
+      "title": "0.4.2 na Chrome Web Store (subiu via automação)",
+      "status": "done"
     }
   ]
 }
