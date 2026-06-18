@@ -14,11 +14,14 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
 const zip = resolve(root, `meetsync-${pkg.version}.zip`);
 
-// Em CI: garante que a tag (v1.2.3) bate com a versão do package.json.
-const tag = process.env.GITHUB_REF_NAME;
-if (tag && tag !== `v${pkg.version}`) {
-  console.error(`✗ Tag ${tag} != versão do package.json (v${pkg.version}). Sincronize antes de publicar.`);
-  process.exit(1);
+// Em CI por TAG: garante que a tag (v1.2.3) bate com a versão do package.json.
+// (Runs manuais via workflow_dispatch usam o branch, não uma tag — não checa.)
+if (process.env.GITHUB_REF_TYPE === 'tag') {
+  const tag = process.env.GITHUB_REF_NAME;
+  if (tag !== `v${pkg.version}`) {
+    console.error(`✗ Tag ${tag} != versão do package.json (v${pkg.version}). Sincronize antes de publicar.`);
+    process.exit(1);
+  }
 }
 
 if (!existsSync(zip)) {
