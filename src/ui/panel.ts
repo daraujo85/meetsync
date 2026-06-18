@@ -20,6 +20,7 @@ import {
   buildFilename,
   buildHeader,
   buildMeetingJson,
+  summarySectionBlock,
   downloadText,
   formatTime,
 } from '@/services/export-txt';
@@ -1670,7 +1671,7 @@ export class Panel {
 
     const includeSummaryInline = !!summaryText && !settings.separateSummaryFile;
     const mainContent = corrected
-      ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? `\n\n${summaryText}` : '')
+      ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? summarySectionBlock(summaryText!) : '')
       : buildTxt(session, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
 
     // Espaça os downloads — o Chrome descarta downloads automáticos disparados juntos.

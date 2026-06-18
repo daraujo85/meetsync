@@ -83,13 +83,16 @@ export type ExportOptions = {
   summaryText?: string; // se presente e em arquivo único, anexa ao final
 };
 
+/** Bloco "RESUMO / ATA" (separador + título + texto) anexado ao final do .txt em arquivo único. */
+export function summarySectionBlock(summaryText: string): string {
+  return ['', SEP, t().exportFile.summarySection, SEP, '', summaryText].join('\n');
+}
+
 export function buildTxt(session: MeetingSession, opts: ExportOptions): string {
   const parts: string[] = [];
   if (opts.includeHeader) parts.push(buildHeader(session));
   parts.push(buildTranscriptBody(session));
-  if (opts.summaryText) {
-    parts.push('', SEP, t().exportFile.summarySection, SEP, '', opts.summaryText);
-  }
+  if (opts.summaryText) parts.push(summarySectionBlock(opts.summaryText));
   return parts.join('\n');
 }
 

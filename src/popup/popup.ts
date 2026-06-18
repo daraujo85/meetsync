@@ -7,7 +7,7 @@
 import { MS_MARK_URL } from '@/ui/logo';
 import { icons } from '@/ui/icons';
 import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, type HistoryMeta } from '@/services/storage-service';
-import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, downloadText } from '@/services/export-txt';
+import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, summarySectionBlock, downloadText } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting } from '@/services/summary-service';
 import type { UserSettings } from '@/types';
 import { t, bcp47, setLocale, resolveLocale } from '@/i18n';
@@ -102,7 +102,7 @@ async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
     }
     const inlineSummary = !!summaryText && !s.separateSummaryFile;
     const main = corrected
-      ? (s.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (inlineSummary ? `\n\n${summaryText}` : '')
+      ? (s.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (inlineSummary ? summarySectionBlock(summaryText!) : '')
       : buildTxt(session, { includeHeader: s.includeHeaderByDefault, summaryText: inlineSummary ? summaryText : undefined });
     const gap = () => new Promise<void>((r) => setTimeout(r, 500));
     downloadText(buildFilename(session), main);
