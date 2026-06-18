@@ -6,7 +6,7 @@ import { el } from './dom';
 import { icons } from './icons';
 import { logoImg } from './logo';
 import { store, cryptoRandomId, type AppState } from '@/services/store';
-import type { AlertDetection, AlertMode } from '@/types';
+import type { AlertDetection, AlertMode, MeetingSession } from '@/types';
 import {
   loadHistory,
   loadMeeting,
@@ -1248,6 +1248,27 @@ export class Panel {
     const dlTxt = this.histAction(icons.download, hi.dlTxt, hi.dlTxtSub, false, () =>
       downloadText(buildFilename(session), buildTxt(session, { includeHeader: true })),
     );
+    const aiReady = this.ollamaReady(store.get());
+    let aiBusy = false;
+    const dlAi = this.histAction(icons.sparkles, hi.dlAi, aiReady ? hi.dlAiSub : hi.dlAiSubNoOllama, !aiReady, () => void (async () => {
+      if (aiBusy) return;
+      aiBusy = true;
+      const labelEl = dlAi.querySelector('.ms-hist-action-label');
+      const subEl = dlAi.querySelector('.ms-hist-action-sub');
+      const prevLabel = labelEl?.textContent ?? '';
+      const prevSub = subEl?.textContent ?? '';
+      dlAi.classList.add('is-disabled');
+      if (labelEl) labelEl.textContent = hi.dlAiBusy;
+      if (subEl) subEl.textContent = hi.dlAiBusySub;
+      try {
+        await this.aiExport(session, { correct: true, summary: store.get().settings.includeSummary, existingSummary: summaryText });
+      } finally {
+        aiBusy = false;
+        dlAi.classList.remove('is-disabled');
+        if (labelEl) labelEl.textContent = prevLabel;
+        if (subEl) subEl.textContent = prevSub;
+      }
+    })());
     const dlAta = this.histAction(icons.doc, hi.dlAta, summaryText ? hi.dlAtaSubYes : hi.dlAtaSubNo, !summaryText, () => {
       if (summaryText) downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText));
     });
@@ -1265,7 +1286,7 @@ export class Panel {
       seg,
       previewBox,
       this.sectionLabel(hi.actions, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, del]),
+      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAi, dlAta, del]),
     ]);
 
     renderPreview();
@@ -1612,37 +1633,51 @@ export class Panel {
     this.busy = true; this.renderFooter(store.get());
     window.addEventListener('beforeunload', this.unloadGuard);
     try {
-      let corrected = false;
-      let correctedText = '';
-      let summaryText: string | undefined;
-
       if ((settings.enableAiCorrection || settings.includeSummary) && ready) store.setCaptureStatus('processing');
 
-      if (settings.enableAiCorrection && ready) {
-        try { correctedText = await correctTranscript(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); corrected = true; }
-        catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.correctionFailed(err instanceof Error ? err.message : String(err)) }); }
-      }
-      if (settings.includeSummary && ready) {
-        try { summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); store.patchUi({ summaryText }); }
-        catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) }); }
-      }
-
-      const includeSummaryInline = !!summaryText && !settings.separateSummaryFile;
-      const mainContent = corrected
-        ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? `\n\n${summaryText}` : '')
-        : buildTxt(session, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
-
-      // Espaça os downloads — o Chrome descarta downloads automáticos disparados juntos.
-      const gap = () => new Promise<void>((r) => setTimeout(r, 500));
-      downloadText(buildFilename(session), mainContent);
-      if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText)); }
-      if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
+      await this.aiExport(session, {
+        correct: settings.enableAiCorrection && ready,
+        summary: settings.includeSummary && ready,
+      });
 
       if (store.get().captureStatus === 'processing') store.setCaptureStatus(store.get().captionsOn ? 'capturing' : 'waiting');
     } finally {
       this.busy = false; this.renderFooter(store.get());
       window.removeEventListener('beforeunload', this.unloadGuard);
     }
+  }
+
+  /** Corrige/resume a sessão via IA (conforme `opts`) e dispara os downloads (.txt + ata/json
+   *  segundo as opções de exportação). Usado no fim da reunião e no histórico.
+   *  `existingSummary`: ata já salva (histórico) — reutiliza em vez de gerar de novo. */
+  private async aiExport(
+    session: MeetingSession,
+    opts: { correct: boolean; summary: boolean; existingSummary?: string },
+  ) {
+    const settings = store.get().settings;
+    let corrected = false;
+    let correctedText = '';
+    let summaryText: string | undefined = opts.existingSummary;
+
+    if (opts.correct) {
+      try { correctedText = await correctTranscript(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); corrected = true; }
+      catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.correctionFailed(err instanceof Error ? err.message : String(err)) }); }
+    }
+    if (!summaryText && opts.summary) {
+      try { summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); store.patchUi({ summaryText }); }
+      catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) }); }
+    }
+
+    const includeSummaryInline = !!summaryText && !settings.separateSummaryFile;
+    const mainContent = corrected
+      ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? `\n\n${summaryText}` : '')
+      : buildTxt(session, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
+
+    // Espaça os downloads — o Chrome descarta downloads automáticos disparados juntos.
+    const gap = () => new Promise<void>((r) => setTimeout(r, 500));
+    downloadText(buildFilename(session), mainContent);
+    if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText)); }
+    if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
   }
 
   // ================= Realtime scheduler =================

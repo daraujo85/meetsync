@@ -16,8 +16,8 @@
       "status": "done"
     },
     {
-      "id": "release-0-4-2",
-      "title": "Release 0.4.2 (build, zip, commit, push)",
+      "id": "atualizar-zip-0-4-1",
+      "title": "Manter 0.4.1 e embutir correções no zip da última release",
       "status": "done"
     },
     {
@@ -26,8 +26,13 @@
       "status": "done"
     },
     {
+      "id": "historico-baixar-com-ia",
+      "title": "Histórico: botão Baixar com IA + clarear que o .txt é bruto",
+      "status": "done"
+    },
+    {
       "id": "publicar-chrome-web-store",
-      "title": "Publicar 0.4.2 na Chrome Web Store",
+      "title": "Publicar release na Chrome Web Store (sob pedido)",
       "status": "todo"
     }
   ]
