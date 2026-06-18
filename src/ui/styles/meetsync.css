@@ -1006,3 +1006,8 @@ button {
 .ms-ask-send { flex: none; width: 38px; height: 38px; border-radius: 12px; background: var(--ms-accent-blue-soft); color: var(--ms-accent-blue); border: 1px solid var(--ms-accent-blue-border); }
 .ms-ask-send:hover { background: rgba(138, 180, 248, 0.24); }
 .ms-ask-send:disabled { opacity: 0.5; cursor: not-allowed; }
+.ms-ask-typing { display: inline-flex; align-items: center; gap: 4px; padding: 4px 0; }
+.ms-ask-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--ms-text-muted); opacity: 0.5; animation: ms-typing 1.2s infinite ease-in-out; }
+.ms-ask-typing span:nth-child(2) { animation-delay: 0.18s; }
+.ms-ask-typing span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes ms-typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }

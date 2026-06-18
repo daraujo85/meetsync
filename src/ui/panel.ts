@@ -1139,7 +1139,7 @@ export class Panel {
     this.askConvo.append(el('div', { class: 'ms-ask-msg is-user' }, [el('div', { class: 'ms-ask-bubble', text: q })]));
     const aiBody = el('div', { class: 'ms-ask-bubble ms-summary' });
     this.askConvo.append(el('div', { class: 'ms-ask-msg is-ai' }, [aiBody]));
-    renderMarkdownInto(aiBody, '', true);
+    aiBody.append(el('span', { class: 'ms-ask-typing' }, [el('span', {}), el('span', {}), el('span', {})]));
     this.askScrollDown();
 
     this.askBusy = true; this.askSendBtn.disabled = true;
@@ -1147,7 +1147,7 @@ export class Panel {
     try {
       const ans = await askMeetingStream(
         this.askSession, s.settings.ollamaUrl, s.settings.ollamaModel!, history, q,
-        (acc) => { renderMarkdownInto(aiBody, acc, true); this.askScrollDown(); },
+        (acc) => { if (acc.trim()) renderMarkdownInto(aiBody, acc, true); this.askScrollDown(); },
         s.settings.vocabulary,
       );
       renderMarkdownInto(aiBody, ans);
