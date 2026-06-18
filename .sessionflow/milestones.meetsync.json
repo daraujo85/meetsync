@@ -31,6 +31,11 @@
       "status": "done"
     },
     {
+      "id": "perguntar-a-reuniao",
+      "title": "Perguntar à reunião: modal de Q&A com IA (ao vivo + histórico)",
+      "status": "done"
+    },
+    {
       "id": "publicar-chrome-web-store",
       "title": "Publicar release na Chrome Web Store (sob pedido)",
       "status": "todo"

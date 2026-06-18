@@ -24,7 +24,7 @@ import {
   downloadText,
   formatTime,
 } from '@/services/export-txt';
-import { correctTranscript, summarizeMeeting, summarizeMeetingStream } from '@/services/summary-service';
+import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, type ChatTurn } from '@/services/summary-service';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -248,6 +248,15 @@ export class Panel {
   private lastDotKind = '';
   private panelHeader!: HTMLElement;
   private aboutSheet!: HTMLElement;
+  // perguntar à reunião (modal de Q&A)
+  private askSheet!: HTMLElement;
+  private askConvo!: HTMLElement;
+  private askInput!: HTMLTextAreaElement;
+  private askSendBtn!: HTMLButtonElement;
+  private askSubtitleEl!: HTMLElement;
+  private askSession: MeetingSession | null = null;
+  private askTurns: ChatTurn[] = [];
+  private askBusy = false;
   // histórico de reuniões
   private historySheet!: HTMLElement;
   private histListView!: HTMLElement;
@@ -455,12 +464,15 @@ export class Panel {
 
     this.aboutSheet = this.buildAbout();
     this.historySheet = this.buildHistorySheet();
-    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet, this.historySheet]);
+    this.askSheet = this.buildAskSheet();
+    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet, this.historySheet, this.askSheet]);
     return this.panel;
   }
 
   private buildHeader(): HTMLElement {
     const h = t().header;
+    const askBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: h.ask, 'aria-label': h.ask, html: icons.chatBubble });
+    askBtn.addEventListener('click', () => this.openAsk(store.get().session, store.get().session.meetingTitle || t().ask.title));
     const historyBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: h.history, 'aria-label': h.history, html: icons.history });
     historyBtn.addEventListener('click', () => store.patchUi({ historyOpen: true }));
     const aboutBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', title: h.about, 'aria-label': h.aboutAria, html: icons.info });
@@ -473,6 +485,7 @@ export class Panel {
       el('span', { class: 'ms-wordmark' }, [el('span', { class: 'ms-wm-meet', text: 'Meet' }), el('span', { class: 'ms-wm-sync', text: 'Sync' })]),
       el('span', { class: 'ms-badge', text: h.beta }),
       el('div', { class: 'ms-spacer' }),
+      askBtn,
       historyBtn,
       aboutBtn,
       closeBtn,
@@ -1055,6 +1068,104 @@ export class Panel {
     return el('div', { class: 'ms-section-label' }, [el('span', { class: 'ms-sl-ico', html: icon }), el('span', { text })]);
   }
 
+  // ================= Perguntar à reunião (modal de Q&A) =================
+  private buildAskSheet(): HTMLElement {
+    const a = t().ask;
+    const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: t().header.back, 'aria-label': t().header.back, html: icons.chevronLeft });
+    this.askSubtitleEl = el('div', { class: 'ms-ask-sub', text: a.subtitle });
+    this.askConvo = el('div', { class: 'ms-ask-convo ms-scroll' });
+
+    this.askInput = el('textarea', { class: 'ms-ask-input', rows: '1', placeholder: a.placeholder, 'aria-label': a.title }) as HTMLTextAreaElement;
+    this.askInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void this.sendAsk(); }
+    });
+    this.askSendBtn = el('button', { class: 'ms-icon-btn ms-ask-send', type: 'button', title: a.send, 'aria-label': a.send, html: icons.chevronRight }) as HTMLButtonElement;
+    this.askSendBtn.addEventListener('click', () => void this.sendAsk());
+
+    const sheet = el('div', { class: 'ms-ask ms-hidden' }, [
+      el('div', { class: 'ms-ask-head' }, [
+        back,
+        el('div', { class: 'ms-ask-titlewrap' }, [el('div', { class: 'ms-ask-title', text: a.title }), this.askSubtitleEl]),
+      ]),
+      this.askConvo,
+      el('div', { class: 'ms-ask-inputrow' }, [this.askInput, this.askSendBtn]),
+    ]);
+    back.addEventListener('click', () => { this.askSheet.classList.add('ms-hidden'); });
+    return sheet;
+  }
+
+  /** Abre o modal de Q&A para uma sessão (reunião ao vivo ou do histórico). */
+  private openAsk(session: MeetingSession, title: string) {
+    this.askSession = session;
+    this.askTurns = [];
+    this.askSubtitleEl.textContent = title;
+    this.renderAskEmpty();
+    this.askInput.value = '';
+    this.askSheet.classList.remove('ms-hidden');
+    setTimeout(() => this.askInput.focus(), 60);
+  }
+
+  private renderAskEmpty() {
+    const a = t().ask;
+    const chip = (text: string) => {
+      const c = el('button', { class: 'ms-ask-ex', type: 'button', text }) as HTMLButtonElement;
+      c.addEventListener('click', () => { this.askInput.value = text; this.askInput.focus(); });
+      return c;
+    };
+    this.askConvo.replaceChildren(
+      el('div', { class: 'ms-ask-empty' }, [
+        el('span', { class: 'ms-ask-empty-ico', html: icons.chatBubble }),
+        el('div', { class: 'ms-ask-empty-title', text: a.emptyTitle }),
+        el('div', { class: 'ms-ask-empty-desc', text: a.emptyDesc }),
+        el('div', { class: 'ms-ask-ex-row' }, [chip(a.ex1), chip(a.ex2), chip(a.ex3)]),
+      ]),
+    );
+  }
+
+  private askScrollDown() {
+    this.askConvo.scrollTop = this.askConvo.scrollHeight;
+  }
+
+  private async sendAsk() {
+    const a = t().ask;
+    const q = this.askInput.value.trim();
+    if (!q || this.askBusy || !this.askSession) return;
+    const s = store.get();
+    if (!this.ollamaReady(s)) { this.askAppendNote(a.requiresOllama); return; }
+    if (this.askSession.transcript.length === 0) { this.askAppendNote(a.noTranscript); return; }
+
+    if (this.askTurns.length === 0) this.askConvo.replaceChildren(); // limpa o estado vazio
+    this.askInput.value = '';
+    this.askConvo.append(el('div', { class: 'ms-ask-msg is-user' }, [el('div', { class: 'ms-ask-bubble', text: q })]));
+    const aiBody = el('div', { class: 'ms-ask-bubble ms-summary' });
+    this.askConvo.append(el('div', { class: 'ms-ask-msg is-ai' }, [aiBody]));
+    renderMarkdownInto(aiBody, '', true);
+    this.askScrollDown();
+
+    this.askBusy = true; this.askSendBtn.disabled = true;
+    const history = [...this.askTurns];
+    try {
+      const ans = await askMeetingStream(
+        this.askSession, s.settings.ollamaUrl, s.settings.ollamaModel!, history, q,
+        (acc) => { renderMarkdownInto(aiBody, acc, true); this.askScrollDown(); },
+        s.settings.vocabulary,
+      );
+      renderMarkdownInto(aiBody, ans);
+      this.askTurns.push({ role: 'user', content: q }, { role: 'assistant', content: ans });
+      this.askScrollDown();
+    } catch {
+      aiBody.classList.remove('ms-summary');
+      aiBody.textContent = a.error;
+    } finally {
+      this.askBusy = false; this.askSendBtn.disabled = false; this.askInput.focus();
+    }
+  }
+
+  private askAppendNote(text: string) {
+    this.askConvo.append(el('div', { class: 'ms-ask-systemnote', text }));
+    this.askScrollDown();
+  }
+
   // ================= Histórico de reuniões (sheet) =================
   private buildHistorySheet(): HTMLElement {
     // --- lista ---
@@ -1246,6 +1357,7 @@ export class Panel {
     });
 
     // ações
+    const askAct = this.histAction(icons.chatBubble, t().ask.historyAction, t().ask.historyActionSub, false, () => this.openAsk(session, m.title));
     const dlTxt = this.histAction(icons.download, hi.dlTxt, hi.dlTxtSub, false, () =>
       downloadText(buildFilename(session), buildTxt(session, { includeHeader: true })),
     );
@@ -1287,7 +1399,7 @@ export class Panel {
       seg,
       previewBox,
       this.sectionLabel(hi.actions, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAi, dlAta, del]),
+      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, dlAta, del]),
     ]);
 
     renderPreview();

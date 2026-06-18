@@ -75,6 +75,24 @@ export async function summarizeMeeting(
   return ollama.generate(url, model, summaryPrompt(session, vocabulary));
 }
 
+export type ChatTurn = { role: 'user' | 'assistant'; content: string };
+
+/** Responde uma pergunta sobre a reunião, baseada na transcrição (com streaming).
+ *  `history` carrega as perguntas/respostas anteriores para permitir follow-ups. */
+export async function askMeetingStream(
+  session: MeetingSession,
+  url: string,
+  model: string,
+  history: ChatTurn[],
+  question: string,
+  onChunk: (accumulated: string) => void,
+  vocabulary?: string[],
+): Promise<string> {
+  const convo = history.map((h) => `${h.role === 'user' ? 'P' : 'R'}: ${h.content}`).join('\n\n');
+  const prompt = t().ai.askPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session), convo, question);
+  return ollama.generateStream(url, model, prompt, onChunk);
+}
+
 /** Gera resumo/ata com streaming: onChunk recebe o texto acumulado a cada pedaço. */
 export async function summarizeMeetingStream(
   session: MeetingSession,

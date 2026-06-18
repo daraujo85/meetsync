@@ -26,6 +26,23 @@ export const en: Messages = {
     collapseAria: 'Collapse',
     beta: 'Beta',
     back: 'Back',
+    ask: 'Ask the meeting',
+  },
+  ask: {
+    title: 'Ask the meeting',
+    subtitle: 'Answers based on the captured transcript',
+    placeholder: 'E.g.: did Lucas mention the payoff?',
+    send: 'Send',
+    emptyTitle: 'Ask anything about this meeting',
+    emptyDesc: 'The AI answers based on what was captured in the transcript.',
+    ex1: 'What were the decisions?',
+    ex2: 'What was left pending?',
+    ex3: 'Did anyone mention deadlines?',
+    requiresOllama: 'Connect Ollama (Export tab) to ask.',
+    noTranscript: 'No transcript captured yet to ask about.',
+    error: 'Could not answer right now. Check Ollama and try again.',
+    historyAction: 'Ask the meeting',
+    historyActionSub: 'Ask the AI about this meeting',
   },
 
   tabs: {
@@ -399,6 +416,24 @@ ${metadata}
 ${vocabulary}
 Transcript:
 ${transcript}`,
+    askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>
+      `You are an assistant that answers questions about ONE meeting, based STRICTLY on the transcript below (captions automatically captured from Google Meet).
+
+Rules:
+- Answer in English, directly and objectively.
+- Rely ONLY on what is in the transcript. Do NOT make anything up.
+- If the answer is not in the transcript, clearly say it was not mentioned / is not in the meeting.
+- When helpful, cite who spoke and/or the timestamp [HH:MM].
+- The transcript is automatic and may have recognition errors; use common sense.
+${vocabulary}
+Meeting context:
+${metadata}
+
+Transcript:
+${transcript}
+${conversation ? `\nConversation so far (Q = question, A = answer):\n${conversation}\n` : ''}
+Question: ${question}
+Answer:`,
     vocabularyClause: (terms: string) =>
       `\nBUSINESS VOCABULARY — company names, products and acronyms used by the user. Automatic Google
 transcription often misspells these terms (e.g.: "acme corp" → "AcmeCorp"). When a word in the text

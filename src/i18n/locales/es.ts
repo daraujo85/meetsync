@@ -26,6 +26,23 @@ export const es: Messages = {
     collapseAria: 'Contraer',
     beta: 'Beta',
     back: 'Volver',
+    ask: 'Preguntar a la reunión',
+  },
+  ask: {
+    title: 'Preguntar a la reunión',
+    subtitle: 'Respuestas según la transcripción capturada',
+    placeholder: 'Ej.: ¿Lucas habló sobre la liquidación?',
+    send: 'Enviar',
+    emptyTitle: 'Pregunta lo que quieras sobre esta reunión',
+    emptyDesc: 'La IA responde según lo capturado en la transcripción.',
+    ex1: '¿Cuáles fueron las decisiones?',
+    ex2: '¿Qué quedó pendiente?',
+    ex3: '¿Alguien habló de plazos?',
+    requiresOllama: 'Conecta Ollama (pestaña Exportar) para preguntar.',
+    noTranscript: 'Aún no hay transcripción capturada para preguntar.',
+    error: 'No pude responder ahora. Revisa Ollama e inténtalo de nuevo.',
+    historyAction: 'Preguntar a la reunión',
+    historyActionSub: 'Pregunta a la IA sobre esta reunión',
   },
 
   tabs: {
@@ -399,6 +416,24 @@ ${metadata}
 ${vocabulary}
 Transcripción:
 ${transcript}`,
+    askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>
+      `Eres un asistente que responde preguntas sobre UNA reunión, basándote ESTRICTAMENTE en la transcripción de abajo (subtítulos capturados automáticamente de Google Meet).
+
+Reglas:
+- Responde en español, de forma directa y objetiva.
+- Básate SOLO en lo que está en la transcripción. NO inventes nada.
+- Si la respuesta no está en la transcripción, di claramente que no se mencionó / no consta en la reunión.
+- Cuando ayude, cita quién habló y/o la hora [HH:MM].
+- La transcripción es automática y puede tener errores de reconocimiento; usa el sentido común.
+${vocabulary}
+Contexto de la reunión:
+${metadata}
+
+Transcripción:
+${transcript}
+${conversation ? `\nConversación hasta ahora (P = pregunta, R = respuesta):\n${conversation}\n` : ''}
+Pregunta: ${question}
+Respuesta:`,
     vocabularyClause: (terms: string) =>
       `\nVOCABULARIO DEL NEGOCIO — nombres de empresas, productos y siglas del usuario. La transcripción
 automática de Google suele escribir mal estos términos (ej.: "acme corp" → "AcmeCorp"). Cuando una

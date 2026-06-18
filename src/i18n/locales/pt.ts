@@ -28,6 +28,23 @@ export const pt = {
     collapseAria: 'Recolher',
     beta: 'Beta',
     back: 'Voltar',
+    ask: 'Perguntar à reunião',
+  },
+  ask: {
+    title: 'Perguntar à reunião',
+    subtitle: 'Respostas com base na transcrição capturada',
+    placeholder: 'Ex.: o Lucas falou sobre quitação?',
+    send: 'Enviar',
+    emptyTitle: 'Pergunte qualquer coisa sobre esta reunião',
+    emptyDesc: 'A IA responde com base no que foi capturado na transcrição.',
+    ex1: 'Quais foram as decisões?',
+    ex2: 'O que ficou pendente?',
+    ex3: 'Alguém falou sobre prazos?',
+    requiresOllama: 'Conecte o Ollama (aba Exportar) para perguntar.',
+    noTranscript: 'Ainda não há transcrição capturada para perguntar.',
+    error: 'Não consegui responder agora. Verifique o Ollama e tente de novo.',
+    historyAction: 'Perguntar à reunião',
+    historyActionSub: 'Pergunte à IA sobre esta reunião',
   },
 
   tabs: {
@@ -405,6 +422,24 @@ ${metadata}
 ${vocabulary}
 Transcrição:
 ${transcript}`,
+    askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>
+      `Você é um assistente que responde perguntas sobre UMA reunião, baseando-se ESTRITAMENTE na transcrição abaixo (legendas capturadas automaticamente do Google Meet).
+
+Regras:
+- Responda em português do Brasil, de forma direta e objetiva.
+- Baseie-se SOMENTE no que está na transcrição. NÃO invente nada.
+- Se a resposta não estiver na transcrição, diga claramente que isso não foi falado / não consta na reunião.
+- Quando ajudar, cite quem falou e/ou o horário [HH:MM].
+- A transcrição é automática e pode ter erros de reconhecimento; interprete com bom senso.
+${vocabulary}
+Contexto da reunião:
+${metadata}
+
+Transcrição:
+${transcript}
+${conversation ? `\nConversa até aqui (P = pergunta, R = resposta):\n${conversation}\n` : ''}
+Pergunta: ${question}
+Resposta:`,
     vocabularyClause: (terms: string) =>
       `\nVOCABULÁRIO DO NEGÓCIO — nomes de empresas, produtos e siglas do usuário. A transcrição automática
 do Google costuma escrever esses termos errado (ex.: "acme corp" → "AcmeCorp"). Quando uma palavra do
