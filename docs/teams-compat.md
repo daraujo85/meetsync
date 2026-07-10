@@ -204,6 +204,8 @@ Compatibilidade base entregue — o Teams funciona com as mesmas features do Mee
 - **Descrição da extensão** (`_locales`) e **popup** reconhecem Meet + Teams.
 
 ## 11. Backlog
+- **Emojis de reação não detectados 100%:** alguns emojis do Teams não são resolvidos (glifo não
+  vem no DOM e o nome não bate no mapa). Ampliar `REACTION_NAME_MAP`/extração em `teams-events-capture.ts`.
 - **Mapear reação/mão-levantada também no Google Meet** (paridade; Meet hoje não tem esses eventos).
 - **Atribuição fina da reação** (quem/qual emoji) — hoje best-effort; `emoji-placeholder` renderiza via CSS.
 - **Roster/mão-levantada dependem do painel "Pessoas" aberto** — avaliar auto-abrir ou fonte alternativa.
