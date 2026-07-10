@@ -197,11 +197,16 @@ Compatibilidade base entregue — o Teams funciona com as mesmas features do Mee
 - **Auto-ligar legenda** no Teams (igual Meet) + **aviso de idioma** (notificação ao entrar).
 - **Manifest:** hosts `teams.cloud.microsoft` e `teams.microsoft.com`.
 
-## 10. Backlog
-- **Reações e mão levantada:** capturados no recon (hooks `[data-tid="participant-reaction"]` e
-  `aria-label` "levantada à mão"), mas **ainda não viram eventos na transcrição**. Item para: (a) modelar
-  esses eventos na store e (b) **mapear também no Google Meet** (que hoje não tem), pra manter paridade.
-- **Atribuição da reação** (quem reagiu / qual emoji): o `emoji-placeholder` renderiza via CSS.
+## 10. Implementado (2ª leva)
+- **Participantes por roster:** registra todos do painel "Pessoas" (inclui quem não falou), não só falantes.
+- **Mão levantada** e **reações**: viram eventos na transcrição (`source: microsoft-teams-event`).
+- **Badge de provedor colorido** no histórico: Meet verde, Teams roxo.
+- **Descrição da extensão** (`_locales`) e **popup** reconhecem Meet + Teams.
+
+## 11. Backlog
+- **Mapear reação/mão-levantada também no Google Meet** (paridade; Meet hoje não tem esses eventos).
+- **Atribuição fina da reação** (quem/qual emoji) — hoje best-effort; `emoji-placeholder` renderiza via CSS.
+- **Roster/mão-levantada dependem do painel "Pessoas" aberto** — avaliar auto-abrir ou fonte alternativa.
 - **Auto-abrir o chat** no Teams em mensagem nova (hoje captura só com o painel aberto).
-- **Texto da store:** atualizar `STORE_LISTING.md`/descrição p/ mencionar Teams antes de publicar.
-- **Detecção de código/título** da reunião no Teams autenticado (URL `/v2/` nem sempre traz `/meet/<id>`).
+- **Texto da store:** atualizar `STORE_LISTING.md` p/ mencionar Teams antes de publicar (0.4.3).
+- **Código/título** da reunião no Teams autenticado (URL `/v2/` nem sempre traz `/meet/<id>`).
