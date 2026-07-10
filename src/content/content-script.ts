@@ -12,6 +12,24 @@ import { AlertWatcher } from './alert-watcher';
 
 const HOST_ID = 'meetsync-host';
 
+/** Extensão ainda "viva"? Após um reload da extensão, o content script antigo fica órfão e
+ *  qualquer chamada chrome.* lança "Extension context invalidated". Usamos isto para não estourar. */
+function extAlive(): boolean {
+  try {
+    return !!chrome.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+/** Envia mensagem ao worker de forma segura (silencia contexto invalidado). */
+function safeSend(msg: unknown) {
+  try {
+    if (extAlive()) chrome.runtime.sendMessage(msg, () => void chrome.runtime.lastError);
+  } catch {
+    /* contexto invalidado — ignora */
+  }
+}
+
 function mountUi(platform: PlatformAdapter): Panel {
   // Evita dupla injeção em re-execuções do content script.
   document.getElementById(HOST_ID)?.remove();
@@ -131,16 +149,10 @@ function wireToolbarBridge() {
   let lastEnded = false;
   store.subscribe((s) => {
     if (s.inMeeting && !lastInMeeting) {
-      chrome.runtime.sendMessage(
-        { type: 'meetsync:notify', kind: 'start', code: s.session.meetingCode },
-        () => void chrome.runtime.lastError,
-      );
+      safeSend({ type: 'meetsync:notify', kind: 'start', code: s.session.meetingCode });
     }
     if (s.ended && !lastEnded) {
-      chrome.runtime.sendMessage(
-        { type: 'meetsync:notify', kind: 'end', entries: s.session.transcript.length },
-        () => void chrome.runtime.lastError,
-      );
+      safeSend({ type: 'meetsync:notify', kind: 'end', entries: s.session.transcript.length });
     }
     lastInMeeting = s.inMeeting;
     lastEnded = s.ended;
@@ -150,6 +162,7 @@ function wireToolbarBridge() {
 /** Re-injeta o host se o Meet remover o nó do DOM (re-render de layout). Mantém estado/painel. */
 function keepHostAttached(host: HTMLElement) {
   window.setInterval(() => {
+    if (!extAlive()) return; // content script órfão após reload — não faz nada
     if (!document.contains(host)) {
       (document.body ?? document.documentElement).append(host);
     }
@@ -210,10 +223,7 @@ async function main() {
       if (platform.captionLanguageHint && !hintShown) {
         hintShown = true;
         window.setTimeout(() => {
-          chrome.runtime.sendMessage(
-            { type: 'meetsync:notify', kind: 'hint', text: platform.captionLanguageHint },
-            () => void chrome.runtime.lastError,
-          );
+          safeSend({ type: 'meetsync:notify', kind: 'hint', text: platform.captionLanguageHint });
         }, 2500);
       }
     },

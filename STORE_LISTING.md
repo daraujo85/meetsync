@@ -10,10 +10,10 @@
   (ativar GitHub Pages: Settings → Pages → Branch `master`, pasta `/docs`)
 
 ## Descrição curta (≤ 132 caracteres)
-Captura as legendas do Google Meet, exibe em chat e exporta .txt/.json; correção, resumo e perguntas com IA via Ollama.
+Captura legendas do Google Meet e Microsoft Teams, exibe em chat e exporta .txt/.json; resumo e perguntas com IA via Ollama.
 
 ## Descrição detalhada
-O MeetSync captura automaticamente as legendas e as mensagens de chat exibidas pelo próprio Google Meet, organiza tudo como uma conversa em ordem cronológica e permite exportar a reunião em .txt e .json — direto no navegador, sem gravar áudio nem tela.
+O MeetSync captura automaticamente as legendas e as mensagens de chat exibidas pelo próprio Google Meet e Microsoft Teams, organiza tudo como uma conversa em ordem cronológica e permite exportar a reunião em .txt e .json — direto no navegador, sem gravar áudio nem tela.
 
 Recursos:
 • Barra discreta e painel em Dark Mode, integrados ao visual do Meet (e arrastáveis).
@@ -35,13 +35,13 @@ Privacidade: os dados ficam no seu navegador. Nada é enviado para servidores ex
 Não captura áudio bruto, não grava tela e não usa rastreadores.
 
 ## Propósito único (Single purpose)
-Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do Google Meet.
+Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do Google Meet e do Microsoft Teams.
 
 ## Justificativa das permissões (campo "Privacy practices")
 - **storage:** salvar localmente as preferências do usuário (URL/modelo do Ollama, opções de exportação).
 - **downloads:** exportar a transcrição/ata como arquivos .txt e .json.
 - **notifications:** avisar o usuário quando a captura de uma reunião começa e quando a reunião termina (transcrição pronta para revisar/baixar) — feedback local, sem coleta de dados.
-- **host meet.google.com:** ler as legendas e o chat exibidos na própria página da reunião — função central da extensão.
+- **host meet.google.com / teams.cloud.microsoft / teams.microsoft.com:** ler as legendas e o chat exibidos na própria página da reunião (Google Meet e Microsoft Teams) — função central da extensão.
 - **host localhost / 127.0.0.1:** comunicar-se, apenas quando o usuário ativa a IA, com um servidor Ollama na máquina do próprio usuário, para correção/resumo da transcrição.
 - **Uso de dados:** a extensão NÃO coleta dados de navegação, NÃO usa analytics e NÃO compartilha/vende dados. O conteúdo da reunião só sai do navegador se o usuário ativar a IA, e somente para a URL do Ollama configurada por ele.
 
@@ -57,10 +57,10 @@ Capturar, organizar e exportar a transcrição (legendas e chat) de reuniões do
 # Chrome Web Store — MeetSync listing (English)
 
 ## Short description (≤ 132 characters)
-Captures Google Meet captions, shows them as a chat and exports to .txt/.json; AI correction, summary and Q&A via Ollama.
+Captures Google Meet and Microsoft Teams captions, shows them as a chat and exports .txt/.json; AI summary & Q&A via Ollama.
 
 ## Detailed description
-MeetSync automatically captures the captions and chat messages that Google Meet already displays, organizes everything as a chronological conversation and lets you export the meeting to .txt and .json — right in the browser, without recording audio or screen.
+MeetSync automatically captures the captions and chat messages that Google Meet and Microsoft Teams already display, organizes everything as a chronological conversation and lets you export the meeting to .txt and .json — right in the browser, without recording audio or screen.
 
 Features:
 • Discreet bar and Dark Mode panel, blended into Meet’s look (and draggable).
@@ -82,13 +82,13 @@ Privacy: data stays in your browser. Nothing is sent to external servers — exc
 It does not capture raw audio, does not record the screen and uses no trackers.
 
 ## Single purpose
-Capture, organize and export the transcript (captions and chat) of Google Meet meetings.
+Capture, organize and export the transcript (captions and chat) of Google Meet and Microsoft Teams meetings.
 
 ## Permission justifications
 - **storage:** save user preferences locally (Ollama URL/model, export options).
 - **downloads:** export the transcript/minutes as .txt and .json files.
 - **notifications:** tell the user when a meeting’s capture starts and when it ends (transcript ready to review/download) — local feedback, no data collection.
-- **host meet.google.com:** read the captions and chat shown on the meeting page — the extension’s core function.
+- **host meet.google.com / teams.cloud.microsoft / teams.microsoft.com:** read the captions and chat shown on the meeting page (Google Meet and Microsoft Teams) — the extension’s core function.
 - **host localhost / 127.0.0.1:** communicate, only when the user enables AI, with an Ollama server on the user’s own machine, for transcript correction/summary.
 - **Data use:** the extension does NOT collect browsing data, does NOT use analytics and does NOT share/sell data. Meeting content only leaves the browser if the user enables AI, and only to the Ollama URL they configured.
 
@@ -97,10 +97,10 @@ Capture, organize and export the transcript (captions and chat) of Google Meet m
 # Chrome Web Store — ficha de MeetSync (Español)
 
 ## Descripción corta (≤ 132 caracteres)
-Captura los subtítulos de Google Meet, los muestra como chat; exporta .txt/.json con corrección, resumen y preguntas IA.
+Captura subtítulos de Google Meet y Microsoft Teams, los muestra como chat y exporta .txt/.json; resumen y preguntas IA.
 
 ## Descripción detallada
-MeetSync captura automáticamente los subtítulos y los mensajes de chat que el propio Google Meet muestra, organiza todo como una conversación en orden cronológico y permite exportar la reunión en .txt y .json — directo en el navegador, sin grabar audio ni pantalla.
+MeetSync captura automáticamente los subtítulos y los mensajes de chat que el propio Google Meet y Microsoft Teams muestran, organiza todo como una conversación en orden cronológico y permite exportar la reunión en .txt y .json — directo en el navegador, sin grabar audio ni pantalla.
 
 Funciones:
 • Barra discreta y panel en Modo Oscuro, integrados al aspecto de Meet (y arrastrables).
@@ -122,15 +122,41 @@ Privacidad: los datos quedan en tu navegador. Nada se envía a servidores extern
 No captura audio en bruto, no graba la pantalla y no usa rastreadores.
 
 ## Propósito único
-Capturar, organizar y exportar la transcripción (subtítulos y chat) de reuniones de Google Meet.
+Capturar, organizar y exportar la transcripción (subtítulos y chat) de reuniones de Google Meet y Microsoft Teams.
 
 ## Justificación de los permisos
 - **storage:** guardar localmente las preferencias del usuario (URL/modelo de Ollama, opciones de exportación).
 - **downloads:** exportar la transcripción/acta como archivos .txt y .json.
 - **notifications:** avisar al usuario cuando empieza la captura de una reunión y cuando termina (transcripción lista para revisar/descargar) — feedback local, sin recolección de datos.
-- **host meet.google.com:** leer los subtítulos y el chat mostrados en la página de la reunión — función central de la extensión.
+- **host meet.google.com / teams.cloud.microsoft / teams.microsoft.com:** leer los subtítulos y el chat mostrados en la página de la reunión (Google Meet y Microsoft Teams) — función central de la extensión.
 - **host localhost / 127.0.0.1:** comunicarse, solo cuando el usuario activa la IA, con un servidor Ollama en la propia máquina del usuario, para corrección/resumen de la transcripción.
 - **Uso de datos:** la extensión NO recopila datos de navegación, NO usa analytics y NO comparte/vende datos. El contenido de la reunión solo sale del navegador si el usuario activa la IA, y únicamente hacia la URL de Ollama configurada por él.
+
+---
+
+# Novidades / What's new / Novedades — v0.4.3
+
+## 🇧🇷 Português
+**Agora também no Microsoft Teams! 🎉**
+- Suporte ao **Teams no navegador** (teams.cloud.microsoft) com as mesmas funções do Google Meet:
+  captura de legendas, chat, participantes, exportação, resumo, correção e perguntas com IA.
+- **Reações** e **mão levantada** entram na transcrição (Meet e Teams).
+- **Histórico** mostra o **provedor** de cada reunião (ícone verde = Meet, roxo = Teams).
+- Aviso pra conferir o **idioma das legendas** no Teams (o padrão pode vir em inglês).
+
+## 🇺🇸 English
+**Now on Microsoft Teams too! 🎉**
+- **Teams on the browser** (teams.cloud.microsoft) with the same features as Google Meet: caption
+  and chat capture, participants, export, summary, correction and AI Q&A.
+- **Reactions** and **raised hands** now appear in the transcript (Meet and Teams).
+- **History** shows each meeting's **provider** (green icon = Meet, purple = Teams).
+- Reminder to check the **caption language** on Teams (it may default to English).
+
+## 🇪🇸 Español
+**¡Ahora también en Microsoft Teams! 🎉**
+- **Teams en el navegador** (teams.cloud.microsoft) con las mismas funciones que Google Meet.
+- **Reacciones** y **mano levantada** entran en la transcripción (Meet y Teams).
+- El **historial** muestra el **proveedor** de cada reunión (verde = Meet, morado = Teams).
 
 ---
 

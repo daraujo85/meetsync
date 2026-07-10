@@ -12,6 +12,7 @@ import { store, cryptoRandomId } from '@/services/store';
 import type { TranscriptEntry } from '@/types';
 import { t } from '@/i18n';
 import type { ChatController } from '../types';
+import { resolveEmoji } from '../reaction-util';
 
 const ROSTER_ITEM = '[data-tid^="attendeesInMeeting-"]';
 const REACTION = '[data-tid="participant-reaction"]';
@@ -20,24 +21,6 @@ const RE_NOT_NAME = /rea(ç|c)(ão|ao|t|ci)|reagi|emoji|placeholder/i;
 // Dedup por pessoa+emoji: colapsa o mesmo emoji repetido rápido (animação), mas deixa
 // passar emojis diferentes em sequência (o usuário mandando várias reações seguidas).
 const REACTION_DEDUP_MS = 1200;
-
-// Nome da reação (PT/EN) → emoji, quando o glifo não vem no DOM (ex.: "Amor" → ❤️).
-const REACTION_NAME_MAP: [RegExp, string][] = [
-  [/heart|amor|cora[cç][aã]o|love/i, '❤️'],
-  [/like|curtir|gostei|joinha|thumbs/i, '👍'],
-  [/applause|aplauso|palmas|clap/i, '👏'],
-  [/laugh|riso|\brir\b|haha|engra[cç]|funny/i, '😆'],
-  [/wow|uau|surpres|surprise/i, '😮'],
-  [/sad|triste|chor|cry/i, '😢'],
-];
-
-/** Resolve o emoji da reação: usa o glifo se estiver presente; senão mapeia pelo nome. */
-function resolveEmoji(raw: string): string {
-  const glyph = raw.match(/\p{Extended_Pictographic}/u);
-  if (glyph) return glyph[0];
-  for (const [re, e] of REACTION_NAME_MAP) if (re.test(raw)) return e;
-  return '👍';
-}
 
 export class TeamsEventsCapture implements ChatController {
   private pollId: number | null = null;

@@ -1,6 +1,6 @@
 {
   "name": "meetsync",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "Captura as legendas do Google Meet, exibe em chat e exporta .txt/.json; correção, resumo e perguntas com IA via Ollama.",
   "type": "module",

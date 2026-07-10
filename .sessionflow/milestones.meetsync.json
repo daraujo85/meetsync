@@ -56,9 +56,14 @@
       "status": "done"
     },
     {
-      "id": "teams-backlog-eventos",
-      "title": "Backlog: reações/mão levantada como eventos (Teams + Meet) e texto da store",
-      "status": "todo"
+      "id": "eventos-reacao-mao",
+      "title": "Reações + mão levantada como eventos (Teams e Meet)",
+      "status": "done"
+    },
+    {
+      "id": "release-0-4-3",
+      "title": "Release 0.4.3: Teams + eventos, store text, zip, tag",
+      "status": "done"
     }
   ]
 }

@@ -299,6 +299,7 @@ export const es: Messages = {
     idleMsg1Html: 'Estás en una pestaña de <strong>reunión</strong> compatible.',
     idleMsg2: 'Entra en una reunión y la captura de subtítulos empieza automáticamente.',
     goToMeet: 'Ir a Google Meet',
+    goToTeams: 'Ir a Microsoft Teams',
     statusIdle: 'Detenido',
     waitingCaptions: 'Esperando subtítulos',
     captureActive: 'Capturando',

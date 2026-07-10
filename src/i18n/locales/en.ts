@@ -299,6 +299,7 @@ export const en: Messages = {
     idleMsg1Html: 'You’re on a supported <strong>meeting</strong> tab.',
     idleMsg2: 'Join a meeting and caption capture starts automatically.',
     goToMeet: 'Go to Google Meet',
+    goToTeams: 'Go to Microsoft Teams',
     statusIdle: 'Stopped',
     waitingCaptions: 'Waiting for captions',
     captureActive: 'Capturing',

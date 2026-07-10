@@ -14,6 +14,7 @@ import { t, bcp47, setLocale, resolveLocale } from '@/i18n';
 
 const PRIVACY_URL = 'https://daraujo85.github.io/meetsync/privacy.html';
 const MEET_URL = 'https://meet.google.com/';
+const TEAMS_URL = 'https://teams.microsoft.com/';
 const WELCOME_PATH = 'src/welcome/welcome.html';
 
 // Hosts onde o MeetSync roda (Google Meet + Microsoft Teams Web). Usado tanto para detectar a
@@ -222,16 +223,19 @@ function recoveryCard(): HTMLElement | null {
 /** Estado fora do Google Meet: orienta e oferece atalho para entrar numa reunião. */
 function renderOutsideMeet() {
   const p = t().popup;
-  const goBtn = el('button', { class: 'ms-btn ms-btn-primary', type: 'button', text: p.goToMeet });
-  goBtn.addEventListener('click', () => {
-    void chrome.tabs.create({ url: MEET_URL });
+  const open = (url: string) => () => {
+    void chrome.tabs.create({ url });
     window.close();
-  });
+  };
+  const meetBtn = el('button', { class: 'ms-btn ms-btn-primary', type: 'button', text: p.goToMeet });
+  meetBtn.addEventListener('click', open(MEET_URL));
+  const teamsBtn = el('button', { class: 'ms-btn ms-btn-secondary', type: 'button', text: p.goToTeams });
+  teamsBtn.addEventListener('click', open(TEAMS_URL));
   render(
     el('div', { class: 'ms-pop-body' }, [
       el('p', { class: 'ms-pop-msg', html: p.outsideMsg1Html }),
       el('p', { class: 'ms-pop-msg', text: p.outsideMsg2 }),
-      goBtn,
+      el('div', { class: 'ms-pop-gorow' }, [meetBtn, teamsBtn]),
     ]),
     recoveryCard(),
   );

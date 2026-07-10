@@ -21,6 +21,7 @@ export type TranscriptEntry = {
   source:
     | 'google-meet-caption'
     | 'google-meet-chat'
+    | 'google-meet-event'
     | 'microsoft-teams-caption'
     | 'microsoft-teams-chat'
     | 'microsoft-teams-event'; // reação / mão levantada

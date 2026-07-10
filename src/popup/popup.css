@@ -61,6 +61,12 @@ body {
   gap: 12px;
 }
 
+.ms-pop-gorow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .ms-pop-msg {
   color: var(--ms-fg-dim);
   margin: 0;

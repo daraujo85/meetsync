@@ -2,6 +2,7 @@
 import { MeetDetector } from '../meet-detector';
 import { CaptionCapture } from '../caption-capture';
 import { ChatCapture } from '../chat-capture';
+import { MeetEventsCapture } from './meet/meet-events-capture';
 import type {
   PlatformAdapter,
   PlatformDetectorCallbacks,
@@ -27,5 +28,9 @@ export class MeetAdapter implements PlatformAdapter {
 
   createChatCapture(): ChatController {
     return new ChatCapture();
+  }
+
+  createEventsCapture(): ChatController {
+    return new MeetEventsCapture();
   }
 }

@@ -302,6 +302,7 @@ export const pt = {
     idleMsg1Html: 'Você está numa aba de <strong>reunião</strong> suportada.',
     idleMsg2: 'Entre numa reunião e a captura das legendas começa automaticamente.',
     goToMeet: 'Ir para o Google Meet',
+    goToTeams: 'Ir para o Microsoft Teams',
     statusIdle: 'Parado',
     waitingCaptions: 'Aguardando legendas',
     captureActive: 'Captura ativa',
