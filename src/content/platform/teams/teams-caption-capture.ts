@@ -22,10 +22,34 @@ const SELECTORS = {
   line: '.fui-ChatMessageCompact',
   author: '[data-tid="author"]',
   text: '[data-tid="closed-caption-text"]',
+  // Botão direto de ligar/desligar legendas (barra lateral / tooltip "Ligar/desligar legendas").
+  // É o caminho mais confiável; evita "Configurações/Estilo da legenda".
+  captionToggle: [
+    'button[aria-label*="ligar/desligar legenda" i]',
+    'button[aria-label*="legendas ao vivo" i]',
+    'button[aria-label*="live caption" i]',
+    'button[aria-label*="turn on caption" i]',
+    'button[title*="ligar/desligar legenda" i]',
+    'button[title*="legendas ao vivo" i]',
+  ],
   moreButton: '#callingButtons-showMoreBtn',
-  captionsMenuItem: ['[role="menuitem"][aria-label="Legendas" i]', '[aria-label="Legendas" i]'],
   turnOff: ['[data-tid="closed-captions-turn-off-button"]', '#captions-panel-dismiss-button'],
 };
+
+const RE_LANG = /idioma e fala|language and speech/i;
+const RE_TURN_ON = /ativar legendas|legendas ao vivo|turn on live caption|live caption/i;
+const RE_CAPTIONS = /^legendas$|captions/i;
+const RE_AVOID = /configura|estilo|style|settings/i;
+
+/** Acha um item de menu (role menuitem) cujo texto/aria casa `re` e não casa RE_AVOID. */
+function findMenuItem(re: RegExp): HTMLElement | null {
+  const items = document.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"],[role="menuitemradio"]');
+  for (const it of Array.from(items)) {
+    const s = `${it.textContent || ''} ${it.getAttribute('aria-label') || ''}`;
+    if (re.test(s) && !RE_AVOID.test(s)) return it as HTMLElement;
+  }
+  return null;
+}
 
 const DEBOUNCE_MS = 300;
 const MIN_TEXT_LEN = 1;
@@ -96,27 +120,45 @@ export class TeamsCaptionCapture implements CaptionController {
     return queryAny(SELECTORS.container) != null || queryAny(SELECTORS.turnOff) != null;
   }
 
-  /** Liga as legendas do Teams (menu "Mais" → "Legendas"). Assíncrono: o menu renderiza depois. */
+  /** Liga as legendas do Teams. 1º tenta o botão direto (CC); senão, menu "Mais" →
+   *  "Idioma e fala" → "Ativar legendas ao vivo" (layout autenticado) ou "Legendas" (light). */
   tryEnableCaptions(): boolean {
     if (this.captionsOn()) return true;
+
+    // Caminho preferido: botão de toggle direto.
+    const toggle = queryAny(SELECTORS.captionToggle) as HTMLElement | null;
+    if (toggle) {
+      toggle.click();
+      return true;
+    }
+
+    // Fallback: menu "Mais".
     const more = document.querySelector(SELECTORS.moreButton) as HTMLElement | null;
     if (!more) return false;
     more.click();
     window.setTimeout(() => {
-      let item = queryAny(SELECTORS.captionsMenuItem) as HTMLElement | null;
-      if (!item) {
-        item = ([...document.querySelectorAll('[role="menuitem"],[role="menuitemcheckbox"]')].find((e) =>
-          /legenda|caption/i.test(e.textContent || ''),
-        ) as HTMLElement | undefined) ?? null;
+      // Layout light (convidado): "Legendas" direto no menu.
+      const direct = findMenuItem(RE_CAPTIONS) || findMenuItem(RE_TURN_ON);
+      if (direct) {
+        direct.click();
+        return;
       }
-      item?.click();
+      // Layout autenticado: abre o submenu "Idioma e fala" e clica em "Ativar legendas ao vivo".
+      const lang = findMenuItem(RE_LANG);
+      if (lang) {
+        lang.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        lang.click();
+        window.setTimeout(() => findMenuItem(RE_TURN_ON)?.click(), 500);
+      }
     }, 500);
     return true;
   }
 
   toggleCaptions() {
     if (this.captionsOn()) {
-      const off = queryAny(SELECTORS.turnOff) as HTMLElement | null;
+      // Desliga pelo mesmo botão de toggle (se houver) ou pelo botão de desligar do painel.
+      const toggle = queryAny(SELECTORS.captionToggle) as HTMLElement | null;
+      const off = (queryAny(SELECTORS.turnOff) as HTMLElement | null) ?? toggle;
       off?.click();
     } else {
       this.tryEnableCaptions();
