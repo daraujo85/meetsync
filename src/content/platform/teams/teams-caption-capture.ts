@@ -15,9 +15,12 @@ import { resolveSelfName } from '../../participant-resolver';
 import type { CaptionController } from '../types';
 
 const SELECTORS = {
+  // Wrapper externo PRIMEIRO: contém todas as linhas independentemente do aninhamento interno
+  // (o cliente autenticado adiciona um "closed-captions-v2-items-renderer" a mais).
   container: [
-    '[data-tid="closed-caption-v2-virtual-list-content"]',
     '[data-tid="closed-caption-renderer-wrapper"]',
+    '[data-tid="closed-caption-v2-window-wrapper"]',
+    '[data-tid="closed-caption-v2-virtual-list-content"]',
   ],
   line: '.fui-ChatMessageCompact',
   author: '[data-tid="author"]',
@@ -211,10 +214,21 @@ export class TeamsCaptionCapture implements CaptionController {
 
   /** Lê as linhas visíveis. A lista é virtualizada: cada nó de linha -> uma entrada (WeakMap);
    *  o texto atualiza in-place enquanto a fala é refinada. Linhas que saem do DOM já foram salvas. */
+  /** Linhas de legenda, robusto ao aninhamento: procura dentro do container e, se vazio,
+   *  varre o documento por linhas que contenham o texto de legenda (`closed-caption-text`). */
+  private captionRows(): Element[] {
+    let rows = this.container ? Array.from(this.container.querySelectorAll(SELECTORS.line)) : [];
+    if (rows.length === 0) {
+      rows = Array.from(document.querySelectorAll(SELECTORS.line)).filter((r) => r.querySelector(SELECTORS.text));
+    }
+    // Só linhas que realmente têm texto de legenda (evita casar com mensagens do chat).
+    return rows.filter((r) => r.querySelector(SELECTORS.text));
+  }
+
   private harvest() {
     if (!this.container) return;
-    const rows = this.container.querySelectorAll(SELECTORS.line);
-    for (const row of Array.from(rows)) {
+    const rows = this.captionRows();
+    for (const row of rows) {
       const textEl = row.querySelector(SELECTORS.text);
       if (!textEl) continue;
       const text = (textEl.textContent || '').replace(/\s+/g, ' ').trim();
