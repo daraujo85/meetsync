@@ -49,6 +49,11 @@
       "id": "publicar-chrome-web-store",
       "title": "0.4.2 na Chrome Web Store (subiu via automação)",
       "status": "done"
+    },
+    {
+      "id": "teams-web-compat",
+      "title": "Investigar compatibilidade com Microsoft Teams Web (docs/teams-compat.md)",
+      "status": "doing"
     }
   ]
 }
