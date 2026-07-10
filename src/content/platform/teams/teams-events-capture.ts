@@ -17,7 +17,27 @@ const ROSTER_ITEM = '[data-tid^="attendeesInMeeting-"]';
 const REACTION = '[data-tid="participant-reaction"]';
 const RE_HAND = /levantad[ao] à mão|levantou a mão|m[ãa]o levantada|hand raised|raised .*hand/i;
 const RE_NOT_NAME = /rea(ç|c)(ão|ao|t|ci)|reagi|emoji|placeholder/i;
-const REACTION_DEDUP_MS = 2500;
+// Dedup por pessoa+emoji: colapsa o mesmo emoji repetido rápido (animação), mas deixa
+// passar emojis diferentes em sequência (o usuário mandando várias reações seguidas).
+const REACTION_DEDUP_MS = 1200;
+
+// Nome da reação (PT/EN) → emoji, quando o glifo não vem no DOM (ex.: "Amor" → ❤️).
+const REACTION_NAME_MAP: [RegExp, string][] = [
+  [/heart|amor|cora[cç][aã]o|love/i, '❤️'],
+  [/like|curtir|gostei|joinha|thumbs/i, '👍'],
+  [/applause|aplauso|palmas|clap/i, '👏'],
+  [/laugh|riso|\brir\b|haha|engra[cç]|funny/i, '😆'],
+  [/wow|uau|surpres|surprise/i, '😮'],
+  [/sad|triste|chor|cry/i, '😢'],
+];
+
+/** Resolve o emoji da reação: usa o glifo se estiver presente; senão mapeia pelo nome. */
+function resolveEmoji(raw: string): string {
+  const glyph = raw.match(/\p{Extended_Pictographic}/u);
+  if (glyph) return glyph[0];
+  for (const [re, e] of REACTION_NAME_MAP) if (re.test(raw)) return e;
+  return '👍';
+}
 
 export class TeamsEventsCapture implements ChatController {
   private pollId: number | null = null;
@@ -29,8 +49,8 @@ export class TeamsEventsCapture implements ChatController {
   start() {
     if (this.running) return;
     this.running = true;
-    this.pollId = window.setInterval(() => this.scanRoster(), 2000);
-    this.scanRoster();
+    this.pollId = window.setInterval(() => this.scan(), 2000);
+    this.scan();
     this.observer = new MutationObserver((muts) => {
       for (const m of muts) {
         for (const node of Array.from(m.addedNodes)) {
@@ -54,20 +74,28 @@ export class TeamsEventsCapture implements ChatController {
     this.lastReactAt.clear();
   }
 
-  /** Registra os participantes do roster (inclui quem não falou) e detecta mãos levantadas. */
-  private scanRoster() {
-    const rows = document.querySelectorAll(ROSTER_ITEM);
+  /** Registra participantes do roster (quando aberto) e detecta mãos levantadas — no roster
+   *  E em qualquer aria-label do documento (tile/toast), pra não depender do painel "Pessoas". */
+  private scan() {
     const nowRaised = new Set<string>();
-    for (const row of Array.from(rows)) {
-      const tid = row.getAttribute('data-tid') || '';
-      const name = tid.slice('attendeesInMeeting-'.length).trim();
+
+    // Roster (painel "Pessoas"): participantes completos + mão.
+    for (const row of Array.from(document.querySelectorAll(ROSTER_ITEM))) {
+      const name = (row.getAttribute('data-tid') || '').slice('attendeesInMeeting-'.length).trim();
       if (!name) continue;
       store.registerParticipant({ name });
-      if (RE_HAND.test(row.getAttribute('aria-label') || '')) {
-        nowRaised.add(name);
-        if (!this.raised.has(name)) this.emit(name, t().events.raisedHand);
-      }
+      if (RE_HAND.test(row.getAttribute('aria-label') || '')) nowRaised.add(name);
     }
+
+    // Varredura ampla: qualquer elemento cujo aria-label indique mão levantada e traga um nome.
+    for (const el of Array.from(document.querySelectorAll('[aria-label]'))) {
+      const al = el.getAttribute('aria-label') || '';
+      if (!RE_HAND.test(al)) continue;
+      const name = al.split(',')[0]!.trim();
+      if (name && name.length < 60 && !RE_HAND.test(name) && /[A-Za-zÀ-ÿ]{2,}/.test(name)) nowRaised.add(name);
+    }
+
+    for (const n of nowRaised) if (!this.raised.has(n)) this.emit(n, t().events.raisedHand);
     this.raised = nowRaised;
   }
 
@@ -80,12 +108,11 @@ export class TeamsEventsCapture implements ChatController {
       if (al && !RE_NOT_NAME.test(al) && /[A-Za-zÀ-ÿ]{2,}/.test(al)) name = al.split(',')[0]!.trim();
       a = a.parentElement;
     }
-    // Emoji: espera renderizar (via CSS/img).
+    // Emoji: espera renderizar (via CSS/img) e resolve pelo glifo ou pelo nome da reação.
     window.setTimeout(() => {
-      let emoji = (node.textContent || '').trim();
-      if (!emoji) emoji = (node.querySelector('img') as HTMLImageElement | null)?.alt || '';
-      if (!emoji || emoji.length > 4) emoji = '👍';
-      const key = name || '·anon';
+      const raw = `${node.textContent || ''} ${(node.querySelector('img') as HTMLImageElement | null)?.alt || ''} ${node.getAttribute('aria-label') || ''}`;
+      const emoji = resolveEmoji(raw);
+      const key = `${name || '·anon'}|${emoji}`;
       const now = Date.now();
       if (now - (this.lastReactAt.get(key) || 0) < REACTION_DEDUP_MS) return;
       this.lastReactAt.set(key, now);
