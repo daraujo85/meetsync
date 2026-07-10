@@ -52,11 +52,18 @@ Como as saídas já são `TranscriptEntry`, a store/UI/export não mudam. O trab
 
 ## 3. O que sabemos / suspeitamos do Teams Web (a validar ao vivo)
 
-- **Domínios:** novo Teams em `teams.microsoft.com` (SPA React, rota tipo `/v2/` e `/_#/...`).
-  Pode haver `teams.live.com` (pessoal). Confirmar os hosts reais das reuniões.
-- **Legendas ao vivo:** o Teams tem "Ativar legendas ao vivo" (menu **...** → Idioma e fala). Elas
-  **são renderizadas no DOM** (não são só overlay de vídeo) — é o equivalente do que fazemos no Meet.
-  Cada linha traz **autor + texto**. Precisamos confirmar o seletor do container e da linha.
+- **Domínio (CONFIRMADO):** o Teams novo serve a reunião em **`teams.cloud.microsoft`** (migração de
+  `*.microsoft.com` para `*.cloud.microsoft`). O manifest precisa casar esse host (provavelmente também
+  `teams.microsoft.com` por compatibilidade). Confirmar se há iframe interno de outra origem.
+- **Legendas ao vivo (CONFIRMADO no DOM):** ligando "Ativar legendas ao vivo", cada linha aparece no
+  DOM com **avatar + nome do autor (negrito) + texto** — exatamente o modelo do Meet. Falta só o
+  `outerHTML` do container e da linha pra escrever os seletores (`data-tid`/classe).
+- **⚠️ Idioma da legenda (novo requisito de UX):** no Teams o **idioma falado** da legenda é escolhido
+  pelo usuário (barra de legenda → ⚙️ → **Configurações de idioma**). Se ficar em inglês com fala em
+  português, a transcrição vira ruído. A extensão **não seta isso de forma confiável** (é um diálogo de
+  config) → o MeetSync deve **orientar o usuário** (aviso/hint) a ajustar o idioma no Teams. Diferença
+  em relação ao Meet, onde só ligamos as legendas.
+- **Botão sair (CONFIRMADO):** rótulo "Sair" (UI em pt-BR) / "Leave" — serve de sinal de "em reunião".
 - **Ponto a FAVOR — `data-tid`:** o Teams usa atributos `data-tid="..."` estáveis em muitos
   elementos (mais estável que o `jsname`/`jscontroller` ofuscado do Meet). Isso tende a deixar os
   seletores do Teams **mais robustos** que os do Meet.
@@ -115,6 +122,86 @@ legendas/chat (ou rodamos uma sessão Playwright logada). Sem isso, não dá pra
 
 ## 7. Recomendação
 
-Viável e de baixo risco arquitetural (o núcleo já é agnóstico). O gargalo é **F0 (recon do DOM ao
-vivo)** — sem isso não há estimativa firme. Sugiro: fazer o recon, depois o spike F1; se as legendas
-estiverem no DOM e sem iframe problemático, seguir com o refactor F2 e o adapter F3.
+Viável e de baixo risco arquitetural (o núcleo já é agnóstico). O gargalo era **F0 (recon do DOM ao
+vivo)** — **feito** (ver seção 8). Falta só o DOM do chat (cliente autenticado). Próximo: spike F1.
+
+---
+
+## 8. Resultado do recon (F0) — feito em 09/07/2026 via CDP numa reunião real
+
+Recon feito entrando na reunião (convidado anônimo) e inspecionando o DOM ao vivo.
+
+### Hosts (2 experiências web distintas!)
+- **Autenticado (Teams completo):** `teams.cloud.microsoft` — é o caso real de quem usa a extensão.
+- **Convidado anônimo (light meetings):** `teams.microsoft.com/light-meetings/launch` (+ launcher
+  `teams.microsoft.com/dl/launcher/...` e `/_#/meet/...`).
+- **Manifest precisa casar os dois:** `https://teams.cloud.microsoft/*` **e** `https://teams.microsoft.com/*`.
+- **Sem iframe** (`document.querySelectorAll('iframe').length === 0` dentro da reunião) — ótimo, não
+  precisa de `all_frames`.
+
+### Mapa de paridade — mesmo recurso, gancho por plataforma
+
+| Recurso | Google Meet (atual) | Microsoft Teams (confirmado) |
+| --- | --- | --- |
+| "Em reunião" / sair | botão aria "Sair da chamada/Leave" | **`#hangup-button`** (texto "Sair") |
+| Ligar legendas | `button[jsname="RrG0hf"]` | `#callingButtons-showMoreBtn` (menu **Mais**) → item `[aria-label="Legendas"]` |
+| Desligar/estado legenda | — | `[data-tid="closed-captions-turn-off-button"]`, `#captions-panel-dismiss-button` |
+| Container das legendas | `region[aria-label*="Legenda"]` | **`[data-tid="closed-caption-v2-virtual-list-content"]`** (lista **virtualizada**) |
+| Linha de legenda | linha estrutural c/ avatar | **`.fui-ChatMessageCompact`** |
+| Autor da fala | estrutural | **`[data-tid="author"]`** (nome real) |
+| Texto da fala | nó de texto limpo | **`[data-tid="closed-caption-text"]`** |
+| Participantes | derivado das falas | `#roster-button` → `[data-tid="calling-roster-attendees"]` → **`[data-tid^="attendeesInMeeting-"]`** (nome no próprio tid) |
+| Mão levantada | (não existe hoje) | `[data-tid^="attendeesInMeeting-"]` com `aria-label` contendo **"levantada à mão"** (+ nº de posição) |
+| Reações (emojis) | (não existe hoje) | nó efêmero **`[data-tid="participant-reaction"]`** (+ `[data-tid="emoji-placeholder"]`). Detecta que houve reação; **quem/qual emoji** exige mais (emoji via CSS) |
+| Chat da reunião | `jsname="xySENc"` / `data-message-id` | lista `[data-tid="message-pane-list-runway"]`; item `[data-tid="chat-pane-item"]`; msg **`[data-tid="chat-pane-message"]`** com **`data-mid`** (dedup); autor `[data-tid="message-author-name"]`; hora `time[datetime]`; texto `#content-<mid>`. **(só no cliente autenticado — anônimo não tem chat)** |
+| Nome próprio ("Você") | Meet mostra "Você" → mapear p/ selfName | Teams mostra **o nome real** na legenda → **não precisa** mapear "Me/Você" (mais simples) |
+| Código/URL/título | path `xxx-xxxx-xxx`, title "- Google Meet" | URL `/meet/<id>` (auth) ou launch URL c/ `coords` base64 (anon); `document.title` é genérico "Microsoft Teams" → título da reunião **não** sai do title |
+
+### Observações que viram requisito do adapter Teams
+1. **Legenda é lista virtualizada:** linhas antigas **saem do DOM** ao rolar. A captura tem que
+   observar (MutationObserver) e persistir cada fala **assim que aparece/finaliza** — não dá pra ler
+   o container inteiro no fim. Cada linha tem `author` + `closed-caption-text` que atualizam in-place
+   (interim → final).
+2. **Idioma da legenda é da REUNIÃO inteira** e escolhido pelo usuário (barra ⚙️ → Configurações de
+   idioma → "Idioma falado nessa reunião"). Se estiver errado, a transcrição vira ruído. A extensão
+   **não seta isso** → precisa **orientar o usuário** (aviso na UI). Muda para todos os participantes.
+3. **Ligar legendas é via menu "Mais"** (2 cliques: abrir menu → "Legendas"), diferente do Meet
+   (1 botão direto). O auto-enable do adapter precisa abrir o menu antes.
+4. **Sem "Você":** o autor vem com nome real, então `selfName` no Teams é só cosmético (Meet usa p/
+   trocar "Você"). Detectar "fala do próprio usuário" (usado no alert-watcher) exige comparar pelo
+   nome do próprio participante.
+5. **PARIDADE — auto-ligar legendas (igual ao Meet):** hoje no Meet a extensão liga as legendas
+   sozinha ao entrar. O adapter do Teams **deve fazer o mesmo** (abrir menu "Mais" → "Legendas"), pra
+   o usuário não precisar ligar manualmente.
+6. **PARIDADE — aviso de idioma:** o padrão do Teams costuma vir em **inglês** e, com fala em PT,
+   quebra a transcrição. A maioria das reuniões aqui é em português → a extensão deve **avisar/orientar
+   o usuário a conferir o idioma falado** da legenda antes (barra ⚙️ → Configurações de idioma). Como é
+   config da reunião e muda p/ todos, a extensão orienta mas não altera sozinha.
+
+### F0 — COMPLETO ✅
+Todas as features mapeadas ao vivo (legenda, chat, participantes, mão levantada, reação, detecção,
+auto-enable, idioma, hosts, sem iframe). Nada mais pendente de recon.
+
+---
+
+## 9. Implementado (jul/2026)
+
+Compatibilidade base entregue — o Teams funciona com as mesmas features do Meet:
+- **Arquitetura `PlatformAdapter`** (`src/content/platform/`): `getPlatform()` escolhe por host;
+  `MeetAdapter` embrulha os módulos do Meet (regressão zero); `TeamsAdapter` novo.
+- **Teams:** detector (`#hangup-button` + meta da URL), captura de legenda (lista virtual, autor/texto
+  por `data-tid`, auto-liga via menu "Mais"→"Legendas"), captura de chat (dedup por `data-mid`).
+- **Paridade de dados:** tudo alimenta a mesma store → export `.txt`/`.json`, resumo, correção, Q&A e
+  alertas funcionam idênticos. Tag de chat via `isChatSource()` (agnóstica); `source` do JSON = provider.
+- **Histórico diferencia o provedor** com ícone (`provMeet`/`provTeams`) no card e no detalhe.
+- **Auto-ligar legenda** no Teams (igual Meet) + **aviso de idioma** (notificação ao entrar).
+- **Manifest:** hosts `teams.cloud.microsoft` e `teams.microsoft.com`.
+
+## 10. Backlog
+- **Reações e mão levantada:** capturados no recon (hooks `[data-tid="participant-reaction"]` e
+  `aria-label` "levantada à mão"), mas **ainda não viram eventos na transcrição**. Item para: (a) modelar
+  esses eventos na store e (b) **mapear também no Google Meet** (que hoje não tem), pra manter paridade.
+- **Atribuição da reação** (quem reagiu / qual emoji): o `emoji-placeholder` renderiza via CSS.
+- **Auto-abrir o chat** no Teams em mensagem nova (hoje captura só com o painel aberto).
+- **Texto da store:** atualizar `STORE_LISTING.md`/descrição p/ mencionar Teams antes de publicar.
+- **Detecção de código/título** da reunião no Teams autenticado (URL `/v2/` nem sempre traz `/meet/<id>`).

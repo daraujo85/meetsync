@@ -28,7 +28,7 @@ chrome.runtime.onMessage.addListener((message: OllamaAction, _sender, sendRespon
 
 // Notificações de estado de captura (B): o content script avisa quando uma reunião começa
 // a ser capturada e quando termina. Feedback proativo sem precisar abrir o painel.
-type NotifyMessage = { type: 'meetsync:notify'; kind: 'start' | 'end'; code?: string; entries?: number };
+type NotifyMessage = { type: 'meetsync:notify'; kind: 'start' | 'end' | 'hint'; code?: string; entries?: number; title?: string; text?: string };
 
 chrome.runtime.onMessage.addListener((message: NotifyMessage) => {
   if (!message || message.type !== 'meetsync:notify') return undefined;
@@ -50,6 +50,14 @@ chrome.runtime.onMessage.addListener((message: NotifyMessage) => {
         iconUrl,
         title: n.meetingEndedTitle,
         message: n.transcriptReady(message.entries ?? 0),
+        priority: 0,
+      });
+    } else if (message.kind === 'hint' && message.text) {
+      void chrome.notifications.create({
+        type: 'basic',
+        iconUrl,
+        title: message.title || 'MeetSync',
+        message: message.text,
         priority: 0,
       });
     }

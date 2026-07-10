@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS,
   type AlertDetection,
   type CaptureStatus,
+  type MeetingProvider,
   type MeetingSession,
   type OllamaState,
   type Participant,
@@ -56,6 +57,7 @@ type Listener = (state: AppState) => void;
 function emptySession(): MeetingSession {
   return {
     id: cryptoRandomId(),
+    provider: 'google-meet',
     meetingCode: '',
     meetingUrl: '',
     participants: [],
@@ -135,7 +137,7 @@ class Store {
   }
 
   // ---- Sessão da reunião ----
-  startSession(meta: { meetingCode: string; meetingUrl: string; meetingTitle?: string }) {
+  startSession(meta: { provider?: MeetingProvider; meetingCode: string; meetingUrl: string; meetingTitle?: string }) {
     this.state.session = {
       ...emptySession(),
       ...meta,

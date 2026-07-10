@@ -8,6 +8,9 @@ export type Participant = {
   avatarUrl?: string;
 };
 
+/** Plataforma de reunião suportada. */
+export type MeetingProvider = 'google-meet' | 'microsoft-teams';
+
 export type TranscriptEntry = {
   id: string;
   participantName: string;
@@ -15,11 +18,22 @@ export type TranscriptEntry = {
   text: string;
   /** ISO 8601, horário local de captura da fala (RF-044). */
   capturedAt: string;
-  source: 'google-meet-caption' | 'google-meet-chat';
+  source:
+    | 'google-meet-caption'
+    | 'google-meet-chat'
+    | 'microsoft-teams-caption'
+    | 'microsoft-teams-chat';
 };
+
+/** É uma mensagem de chat (independente da plataforma)? Usado no export/JSON. */
+export function isChatSource(source: TranscriptEntry['source']): boolean {
+  return source.endsWith('-chat');
+}
 
 export type MeetingSession = {
   id: string;
+  /** Plataforma onde a reunião foi capturada. Default 'google-meet' (compat. com dados antigos). */
+  provider: MeetingProvider;
   meetingCode: string;
   meetingUrl: string;
   meetingTitle?: string;

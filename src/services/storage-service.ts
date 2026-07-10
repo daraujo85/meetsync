@@ -3,7 +3,7 @@
 // snapshot da última reunião como rede de segurança (o Meet redireciona/fecha a aba ao encerrar
 // — sem isto a transcrição se perde antes do download). Tudo fica só local, nada sai do navegador.
 
-import { DEFAULT_SETTINGS, type MeetingSession, type UserSettings } from '@/types';
+import { DEFAULT_SETTINGS, type MeetingProvider, type MeetingSession, type UserSettings } from '@/types';
 import { t } from '@/i18n';
 
 const SETTINGS_KEY = 'meetsync:settings';
@@ -47,6 +47,8 @@ export type SavedMeeting = {
 /** Metadado leve para a lista do histórico (sem o transcript inteiro). */
 export type HistoryMeta = {
   id: string;
+  /** Plataforma da reunião (para o ícone na lista). Default 'google-meet' (dados antigos). */
+  provider: MeetingProvider;
   title: string;
   meetingCode: string;
   savedAt: string;
@@ -70,6 +72,7 @@ function metaFromSession(session: MeetingSession, summaryText: string | undefine
   const first = [...session.transcript].sort((a, b) => (a.capturedAt < b.capturedAt ? -1 : a.capturedAt > b.capturedAt ? 1 : 0))[0];
   return {
     id: session.id,
+    provider: session.provider ?? 'google-meet',
     title: session.meetingTitle || session.meetingCode || t().history.meetingFallback,
     meetingCode: session.meetingCode,
     savedAt,

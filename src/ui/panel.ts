@@ -1244,7 +1244,10 @@ export class Panel {
       el('span', { class: 'ms-hist-tile-mon', text: isNaN(d.getTime()) ? '' : monthAbbr(d) }),
     ]);
 
+    const provIcon = m.provider === 'microsoft-teams' ? icons.provTeams : icons.provMeet;
+    const provName = m.provider === 'microsoft-teams' ? 'Microsoft Teams' : 'Google Meet';
     const titleRow = el('div', { class: 'ms-hist-c-titlerow' }, [
+      el('span', { class: 'ms-hist-prov', title: provName, 'aria-label': provName, html: provIcon }),
       ...(m.starred ? [el('span', { class: 'ms-hist-star', html: icons.starFill })] : []),
       el('span', { class: 'ms-hist-c-title', text: m.title }),
     ]);
@@ -1303,11 +1306,16 @@ export class Panel {
       this.histMetas = await loadHistory();
     })());
 
+    const provIcon = m.provider === 'microsoft-teams' ? icons.provTeams : icons.provMeet;
+    const provName = m.provider === 'microsoft-teams' ? 'Microsoft Teams' : 'Google Meet';
     const head = el('div', { class: 'ms-hist-head' }, [
       back,
       el('div', { class: 'ms-hist-d-titlewrap' }, [
-        el('div', { class: 'ms-hist-title', text: m.title }),
-        el('div', { class: 'ms-hist-d-sub', text: `${fmtFullDate(m.startISO ?? m.savedAt)} · ${m.startISO ? formatTime(m.startISO) : ''}${m.endISO ? '–' + formatTime(m.endISO) : ''}` }),
+        el('div', { class: 'ms-hist-d-titlerow' }, [
+          el('span', { class: 'ms-hist-prov', title: provName, 'aria-label': provName, html: provIcon }),
+          el('div', { class: 'ms-hist-title', text: m.title }),
+        ]),
+        el('div', { class: 'ms-hist-d-sub', text: `${provName} · ${fmtFullDate(m.startISO ?? m.savedAt)} · ${m.startISO ? formatTime(m.startISO) : ''}${m.endISO ? '–' + formatTime(m.endISO) : ''}` }),
       ]),
       star,
     ]);

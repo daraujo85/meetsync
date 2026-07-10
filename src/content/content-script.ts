@@ -6,14 +6,13 @@ import meetsyncCss from '@/ui/styles/meetsync.css?inline';
 import { store } from '@/services/store';
 import { saveMeeting, consumeOpenHistory } from '@/services/storage-service';
 import { Panel } from '@/ui/panel';
-import { MeetDetector, type MeetingMeta } from './meet-detector';
-import { CaptionCapture } from './caption-capture';
-import { ChatCapture } from './chat-capture';
+import { getPlatform } from './platform';
+import type { PlatformAdapter, CaptionController, ChatController, PlatformMeetingMeta } from './platform/types';
 import { AlertWatcher } from './alert-watcher';
 
 const HOST_ID = 'meetsync-host';
 
-function mountUi(): Panel {
+function mountUi(platform: PlatformAdapter): Panel {
   // Evita dupla injeção em re-execuções do content script.
   document.getElementById(HOST_ID)?.remove();
 
@@ -29,8 +28,8 @@ function mountUi(): Panel {
 
   (document.body ?? document.documentElement).append(host);
 
-  const capture = new CaptionCapture();
-  const chat = new ChatCapture();
+  const capture = platform.createCaptionCapture();
+  const chat = platform.createChatCapture();
   const watcher = new AlertWatcher();
   const panel = new Panel({
     toggleCaptions: () => capture.toggleCaptions(),
@@ -40,7 +39,7 @@ function mountUi(): Panel {
   watcher.start();
 
   // Guarda host e capturas na instância para o detector/guard acessarem.
-  const handle = panel as unknown as { __capture: CaptionCapture; __chat: ChatCapture; __host: HTMLElement };
+  const handle = panel as unknown as { __capture: CaptionController; __chat: ChatController; __host: HTMLElement };
   handle.__capture = capture;
   handle.__chat = chat;
   handle.__host = host;
@@ -150,23 +149,27 @@ function keepHostAttached(host: HTMLElement) {
   }, 2000);
 }
 
+let hintShown = false;
+
 async function main() {
+  const platform = getPlatform();
+  if (!platform) return; // host não suportado (defesa; o manifest já restringe)
   await store.initSettings();
-  const panel = mountUi();
-  const handle = panel as unknown as { __capture: CaptionCapture; __chat: ChatCapture; __host: HTMLElement };
+  const panel = mountUi(platform);
+  const handle = panel as unknown as { __capture: CaptionController; __chat: ChatController; __host: HTMLElement };
   const capture = handle.__capture;
   const chat = handle.__chat;
   keepHostAttached(handle.__host);
   wireToolbarBridge();
   wireMeetingPersistence();
 
-  // Se o popup pediu (fora do Meet) para abrir o histórico, abre agora que a aba carregou.
+  // Se o popup pediu (fora da reunião) para abrir o histórico, abre agora que a aba carregou.
   void consumeOpenHistory().then((open) => {
     if (open) store.patchUi({ review: true, expanded: true, historyOpen: true });
   });
 
-  const detector = new MeetDetector({
-    onJoined: (meta: MeetingMeta) => {
+  const detector = platform.createDetector({
+    onJoined: (meta: PlatformMeetingMeta) => {
       // Mesmo encontro (rejoin/transiente) → retoma sem zerar; reunião nova → começa do zero.
       // Evita perder o começo da reunião caso o detector dispare um re-join espúrio.
       const cur = store.get().session;
@@ -180,7 +183,7 @@ async function main() {
         console.warn('[MeetSync] falha ao iniciar captura', err);
       }
       if (store.get().settings.autoEnableCaptions) {
-        // Pequeno atraso para a toolbar do Meet renderizar antes de tentar ligar legendas.
+        // Pequeno atraso para a toolbar renderizar antes de tentar ligar legendas.
         window.setTimeout(() => {
           try {
             capture.tryEnableCaptions();
@@ -188,6 +191,16 @@ async function main() {
             /* ignora */
           }
         }, 1500);
+      }
+      // Dica de plataforma (ex.: conferir idioma da legenda no Teams) — uma vez por sessão da aba.
+      if (platform.captionLanguageHint && !hintShown) {
+        hintShown = true;
+        window.setTimeout(() => {
+          chrome.runtime.sendMessage(
+            { type: 'meetsync:notify', kind: 'hint', text: platform.captionLanguageHint },
+            () => void chrome.runtime.lastError,
+          );
+        }, 2500);
       }
     },
     onLeft: () => {

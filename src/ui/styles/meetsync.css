@@ -908,6 +908,9 @@ button {
 .ms-hist-c-top { display: flex; align-items: flex-start; gap: 10px; }
 .ms-hist-c-left { flex: 1; min-width: 0; }
 .ms-hist-c-titlerow { display: flex; align-items: center; gap: 7px; }
+.ms-hist-prov { flex: none; display: inline-flex; align-items: center; color: var(--ms-accent-blue); }
+.ms-hist-prov svg { width: 15px; height: 15px; }
+.ms-hist-d-titlerow { display: flex; align-items: center; gap: 8px; }
 .ms-hist-star svg { width: 14px; height: 14px; color: var(--ms-warning-yellow); }
 .ms-hist-c-title { font-size: 14px; font-weight: 600; color: var(--ms-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ms-hist-c-meta { display: flex; align-items: center; gap: 5px; margin-top: 5px; color: var(--ms-text-muted); font-size: 12px; white-space: nowrap; }

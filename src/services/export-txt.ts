@@ -1,7 +1,7 @@
 // Montagem e download do arquivo .txt (§6.9/6.10). O download usa um <a download> via
 // Blob URL (não exige roteamento pelo background nem APIs extras).
 
-import type { MeetingSession } from '@/types';
+import { isChatSource, type MeetingSession } from '@/types';
 import { t } from '@/i18n';
 
 function pad(n: number): string {
@@ -72,7 +72,7 @@ export function buildTranscriptBody(session: MeetingSession): string {
   return [...session.transcript]
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))
     .map((e) => {
-      const tag = e.source === 'google-meet-chat' ? ` (${f.chatTag})` : '';
+      const tag = isChatSource(e.source) ? ` (${f.chatTag})` : '';
       return `[${formatTime(e.capturedAt)}] ${e.participantName}${tag}: ${e.text}`;
     })
     .join('\n');
@@ -136,11 +136,11 @@ export function buildMeetingJson(session: MeetingSession, summaryText?: string):
         capturedAt: e.capturedAt,
         speaker: e.participantName,
         text: e.text,
-        kind: e.source === 'google-meet-chat' ? 'chat' : 'speech',
+        kind: isChatSource(e.source) ? 'chat' : 'speech',
         source: e.source,
       })),
     summary: summaryText ?? null,
-    source: 'google-meet',
+    source: session.provider ?? 'google-meet',
   };
   return JSON.stringify(obj, null, 2);
 }

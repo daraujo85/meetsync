@@ -39,7 +39,13 @@ export default defineManifest({
   },
   content_scripts: [
     {
-      matches: ['https://meet.google.com/*'],
+      // Google Meet + Microsoft Teams (Web): teams.cloud.microsoft (autenticado) e
+      // teams.microsoft.com (convidado/anônimo + launcher).
+      matches: [
+        'https://meet.google.com/*',
+        'https://teams.cloud.microsoft/*',
+        'https://teams.microsoft.com/*',
+      ],
       js: ['src/content/content-script.ts'],
       run_at: 'document_idle',
     },
@@ -48,5 +54,11 @@ export default defineManifest({
   // localhost/127.0.0.1 concedidos na instalação: garante que o fetch ao Ollama no service
   // worker contorne o CORS (Chrome dispensa CORS para hosts em host_permissions).
   // Permissões enxutas para a Chrome Web Store — sem curinga (evita rejeição no review).
-  host_permissions: ['https://meet.google.com/*', 'http://localhost/*', 'http://127.0.0.1/*'],
+  host_permissions: [
+    'https://meet.google.com/*',
+    'https://teams.cloud.microsoft/*',
+    'https://teams.microsoft.com/*',
+    'http://localhost/*',
+    'http://127.0.0.1/*',
+  ],
 });

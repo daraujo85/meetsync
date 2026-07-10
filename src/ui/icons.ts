@@ -54,4 +54,7 @@ export const icons = {
   external: wrap('M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z'),
   database: wrap('M12 3C7.58 3 4 4.79 4 7s3.58 4 8 4 8-1.79 8-4-3.58-4-8-4zm0 13c-4.42 0-8-1.79-8-4v3c0 2.21 3.58 4 8 4s8-1.79 8-4v-3c0 2.21-3.58 4-8 4zm0-5c-4.42 0-8-1.79-8-4v3c0 2.21 3.58 4 8 4s8-1.79 8-4V7c0 2.21-3.58 4-8 4z'),
   chatBubble: wrap('M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z'),
+  // Ícones de provedor (monocromáticos) para diferenciar a reunião no histórico.
+  provMeet: stroke('<rect x="3" y="6.5" width="12" height="11" rx="2.5"/><path d="M15 10l5-2.5v9L15 14z"/>'),
+  provTeams: stroke('<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M8 8.5h8M12 8.5V16"/>'),
 };

@@ -52,8 +52,13 @@
     },
     {
       "id": "teams-web-compat",
-      "title": "Investigar compatibilidade com Microsoft Teams Web (docs/teams-compat.md)",
-      "status": "doing"
+      "title": "Compatibilidade com Microsoft Teams Web (adapter + captura + histórico)",
+      "status": "done"
+    },
+    {
+      "id": "teams-backlog-eventos",
+      "title": "Backlog: reações/mão levantada como eventos (Teams + Meet) e texto da store",
+      "status": "todo"
     }
   ]
 }
