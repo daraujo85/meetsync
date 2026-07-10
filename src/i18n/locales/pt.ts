@@ -47,6 +47,12 @@ export const pt = {
     historyActionSub: 'Pergunte à IA sobre esta reunião',
   },
 
+  events: {
+    raisedHand: 'levantou a mão ✋',
+    reacted: (emoji: string) => `reagiu ${emoji}`,
+    someone: 'Alguém',
+  },
+
   tabs: {
     transcript: 'Transcrição',
     alerts: 'Alertas',

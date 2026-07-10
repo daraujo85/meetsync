@@ -33,9 +33,11 @@ export function getTeamsMeetingMeta(): PlatformMeetingMeta {
       /* ignora */
     }
   }
-  // document.title costuma ser genérico ("Microsoft Teams"); só usamos se parecer um título real.
-  const raw = (document.title || '').replace(/\s*[|\-–]\s*Microsoft Teams.*$/i, '').trim();
-  const title = raw && raw.length > 1 && !/^\(?\d*\)?\s*microsoft teams$/i.test(raw) ? raw : undefined;
+  // document.title costuma vir com lixo ("Meeting join | Reunião do Microsoft Teams",
+  // "(2) Calendar | ...", "Chat | ..."). Pega o 1º segmento que pareça um título real.
+  const JUNK = /microsoft teams|reunião do microsoft|teams meeting|^calendar$|^chat$|^\(?\d+\)?\s*calendar$|^meeting join$|^ingressar/i;
+  const parts = (document.title || '').split('|').map((s) => s.trim()).filter(Boolean);
+  const title = parts.find((p) => p.length > 1 && !JUNK.test(p));
 
   return { provider: 'microsoft-teams', meetingCode: code, meetingUrl: url, meetingTitle: title };
 }

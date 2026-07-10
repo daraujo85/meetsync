@@ -1,7 +1,7 @@
 // Montagem e download do arquivo .txt (§6.9/6.10). O download usa um <a download> via
 // Blob URL (não exige roteamento pelo background nem APIs extras).
 
-import { isChatSource, type MeetingSession } from '@/types';
+import { isChatSource, entryKind, type MeetingSession } from '@/types';
 import { t } from '@/i18n';
 
 function pad(n: number): string {
@@ -136,7 +136,7 @@ export function buildMeetingJson(session: MeetingSession, summaryText?: string):
         capturedAt: e.capturedAt,
         speaker: e.participantName,
         text: e.text,
-        kind: isChatSource(e.source) ? 'chat' : 'speech',
+        kind: entryKind(e.source),
         source: e.source,
       })),
     summary: summaryText ?? null,

@@ -45,6 +45,12 @@ export const en: Messages = {
     historyActionSub: 'Ask the AI about this meeting',
   },
 
+  events: {
+    raisedHand: 'raised their hand ✋',
+    reacted: (emoji: string) => `reacted ${emoji}`,
+    someone: 'Someone',
+  },
+
   tabs: {
     transcript: 'Transcript',
     alerts: 'Alerts',

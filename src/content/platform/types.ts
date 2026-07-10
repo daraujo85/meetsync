@@ -43,6 +43,8 @@ export interface PlatformAdapter {
   createDetector(cb: PlatformDetectorCallbacks): MeetingDetector;
   createCaptionCapture(): CaptionController;
   createChatCapture(): ChatController;
+  /** Captura opcional de presença/eventos (participantes, mão levantada, reações). */
+  createEventsCapture?(): ChatController;
   /** Dica única a exibir ao usuário ao entrar (ex.: conferir idioma da legenda no Teams). */
   captionLanguageHint?: string;
 }

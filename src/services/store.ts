@@ -3,6 +3,7 @@
 
 import {
   DEFAULT_SETTINGS,
+  isEventSource,
   type AlertDetection,
   type CaptureStatus,
   type MeetingProvider,
@@ -260,7 +261,10 @@ class Store {
     } else {
       this.state.session.transcript.push(entry);
     }
-    this.registerParticipant({ name: entry.participantName, avatarUrl: entry.participantAvatarUrl });
+    // Eventos (reação/mão levantada) não devem criar participantes (ex.: "Alguém").
+    if (!isEventSource(entry.source)) {
+      this.registerParticipant({ name: entry.participantName, avatarUrl: entry.participantAvatarUrl });
+    }
     this.emit();
     for (const fn of this.entryListeners) fn(entry);
   }

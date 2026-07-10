@@ -2,6 +2,7 @@
 import { TeamsDetector } from './teams-detector';
 import { TeamsCaptionCapture } from './teams-caption-capture';
 import { TeamsChatCapture } from './teams-chat-capture';
+import { TeamsEventsCapture } from './teams-events-capture';
 import type {
   PlatformAdapter,
   PlatformDetectorCallbacks,
@@ -29,5 +30,9 @@ export class TeamsAdapter implements PlatformAdapter {
 
   createChatCapture(): ChatController {
     return new TeamsChatCapture();
+  }
+
+  createEventsCapture(): ChatController {
+    return new TeamsEventsCapture();
   }
 }

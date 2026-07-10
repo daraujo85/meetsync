@@ -30,6 +30,7 @@ function mountUi(platform: PlatformAdapter): Panel {
 
   const capture = platform.createCaptionCapture();
   const chat = platform.createChatCapture();
+  const events = platform.createEventsCapture?.() ?? null;
   const watcher = new AlertWatcher();
   const panel = new Panel({
     toggleCaptions: () => capture.toggleCaptions(),
@@ -39,9 +40,15 @@ function mountUi(platform: PlatformAdapter): Panel {
   watcher.start();
 
   // Guarda host e capturas na instância para o detector/guard acessarem.
-  const handle = panel as unknown as { __capture: CaptionController; __chat: ChatController; __host: HTMLElement };
+  const handle = panel as unknown as {
+    __capture: CaptionController;
+    __chat: ChatController;
+    __events: ChatController | null;
+    __host: HTMLElement;
+  };
   handle.__capture = capture;
   handle.__chat = chat;
+  handle.__events = events;
   handle.__host = host;
   return panel;
 }
@@ -156,9 +163,15 @@ async function main() {
   if (!platform) return; // host não suportado (defesa; o manifest já restringe)
   await store.initSettings();
   const panel = mountUi(platform);
-  const handle = panel as unknown as { __capture: CaptionController; __chat: ChatController; __host: HTMLElement };
+  const handle = panel as unknown as {
+    __capture: CaptionController;
+    __chat: ChatController;
+    __events: ChatController | null;
+    __host: HTMLElement;
+  };
   const capture = handle.__capture;
   const chat = handle.__chat;
+  const events = handle.__events;
   keepHostAttached(handle.__host);
   wireToolbarBridge();
   wireMeetingPersistence();
@@ -179,6 +192,7 @@ async function main() {
       try {
         capture.start();
         chat.start(); // captura mensagens do chat de texto (quando o painel estiver aberto)
+        events?.start(); // participantes (roster) + mão levantada + reações (Teams)
       } catch (err) {
         console.warn('[MeetSync] falha ao iniciar captura', err);
       }
@@ -208,6 +222,7 @@ async function main() {
       try {
         capture.stop();
         chat.stop();
+        events?.stop();
       } catch {
         /* ignora */
       }

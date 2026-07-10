@@ -22,12 +22,25 @@ export type TranscriptEntry = {
     | 'google-meet-caption'
     | 'google-meet-chat'
     | 'microsoft-teams-caption'
-    | 'microsoft-teams-chat';
+    | 'microsoft-teams-chat'
+    | 'microsoft-teams-event'; // reação / mão levantada
 };
 
 /** É uma mensagem de chat (independente da plataforma)? Usado no export/JSON. */
 export function isChatSource(source: TranscriptEntry['source']): boolean {
   return source.endsWith('-chat');
+}
+
+/** É um evento da reunião (reação, mão levantada)? */
+export function isEventSource(source: TranscriptEntry['source']): boolean {
+  return source.endsWith('-event');
+}
+
+/** Classifica a entrada para export/JSON. */
+export function entryKind(source: TranscriptEntry['source']): 'speech' | 'chat' | 'event' {
+  if (isChatSource(source)) return 'chat';
+  if (isEventSource(source)) return 'event';
+  return 'speech';
 }
 
 export type MeetingSession = {
