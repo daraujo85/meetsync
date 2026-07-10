@@ -16,6 +16,22 @@ const PRIVACY_URL = 'https://daraujo85.github.io/meetsync/privacy.html';
 const MEET_URL = 'https://meet.google.com/';
 const WELCOME_PATH = 'src/welcome/welcome.html';
 
+// Hosts onde o MeetSync roda (Google Meet + Microsoft Teams Web). Usado tanto para detectar a
+// aba ativa quanto para achar uma aba de reunião ao abrir o histórico.
+const SUPPORTED_TAB_GLOBS = [
+  'https://meet.google.com/*',
+  'https://teams.cloud.microsoft/*',
+  'https://teams.microsoft.com/*',
+];
+function isSupportedMeetingUrl(url?: string): boolean {
+  return (
+    !!url &&
+    (url.includes('meet.google.com') ||
+      url.includes('teams.cloud.microsoft') ||
+      url.includes('teams.microsoft.com'))
+  );
+}
+
 type StatusReply = {
   inMeeting: boolean;
   ended: boolean;
@@ -74,7 +90,7 @@ function footer(): HTMLElement {
 let history: HistoryMeta[] = [];
 let settings: UserSettings | null = null;
 let activeTabId: number | undefined;
-let activeIsMeet = false;
+let activeIsSupported = false;
 
 function aiReady(): boolean {
   return !!settings && !!settings.ollamaModel && !!settings.ollamaUrl && (settings.enableAiCorrection || settings.includeSummary);
@@ -128,7 +144,7 @@ function formatWhen(iso: string): string {
 
 /** Abre o painel de histórico — funciona igual dentro ou fora do meet.google.com. */
 async function openHistoryPanel() {
-  if (activeIsMeet && activeTabId !== undefined) {
+  if (activeIsSupported && activeTabId !== undefined) {
     const tabId = activeTabId;
     chrome.tabs.sendMessage(tabId, { type: 'meetsync:open-history' }, () => {
       if (chrome.runtime.lastError) {
@@ -142,7 +158,7 @@ async function openHistoryPanel() {
     return;
   }
   try {
-    const tabs = await chrome.tabs.query({ url: 'https://meet.google.com/*' });
+    const tabs = await chrome.tabs.query({ url: SUPPORTED_TAB_GLOBS });
     const meetTab = tabs.find((t) => t.id !== undefined);
     if (meetTab?.id !== undefined) {
       await chrome.tabs.update(meetTab.id, { active: true });
@@ -276,19 +292,19 @@ async function init() {
   setLocale(resolveLocale(settings.locale));
   document.documentElement.lang = bcp47();
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  // tab.url só é legível para hosts com permissão (temos meet.google.com): basta para
-  // identificar positivamente o Meet — qualquer outra aba cai no estado de orientação.
-  const isMeet = !!tab?.url && tab.url.includes('meet.google.com');
+  // tab.url só é legível para hosts com permissão (Meet + Teams): basta para identificar
+  // positivamente uma aba de reunião suportada — qualquer outra cai no estado de orientação.
+  const supported = isSupportedMeetingUrl(tab?.url);
   activeTabId = tab?.id;
-  activeIsMeet = isMeet && tab?.id !== undefined;
+  activeIsSupported = supported && tab?.id !== undefined;
 
-  if (!isMeet || tab?.id === undefined) {
+  if (!supported || tab?.id === undefined) {
     renderOutsideMeet();
     return;
   }
 
-  // No Meet: pergunta o status ao content script. Se não responder (ainda carregando ou fora
-  // de reunião), mostra o estado "no Meet, sem reunião".
+  // Em aba suportada: pergunta o status ao content script. Se não responder (ainda carregando
+  // ou fora de reunião), mostra o estado "na aba, sem reunião".
   chrome.tabs.sendMessage(tab.id, { type: 'meetsync:get-status' }, (reply?: StatusReply) => {
     if (chrome.runtime.lastError || !reply) {
       renderMeetIdle();

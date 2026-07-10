@@ -288,9 +288,9 @@ export const es: Messages = {
   popup: {
     privacy: 'Privacidad',
     help: 'Ayuda',
-    outsideMsg1Html: 'MeetSync funciona <strong>dentro de Google Meet</strong>.',
+    outsideMsg1Html: 'MeetSync funciona <strong>en Google Meet y Microsoft Teams</strong>.',
     outsideMsg2: 'Entra en una reunión para capturar los subtítulos, ver el chat y exportar la transcripción.',
-    idleMsg1Html: 'Estás en <strong>Google Meet</strong>.',
+    idleMsg1Html: 'Estás en una pestaña de <strong>reunión</strong> compatible.',
     idleMsg2: 'Entra en una reunión y la captura de subtítulos empieza automáticamente.',
     goToMeet: 'Ir a Google Meet',
     statusIdle: 'Detenido',

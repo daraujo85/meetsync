@@ -1,6 +1,6 @@
 {
   "name": { "message": "MeetSync" },
   "description": {
-    "message": "Captura as legendas do Google Meet, exibe em chat e exporta em .txt/.json, com correção e resumo opcionais via Ollama."
+    "message": "Captura legendas do Google Meet e Microsoft Teams, exibe em chat e exporta .txt/.json; resumo e perguntas com IA via Ollama."
   }
 }

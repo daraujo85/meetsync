@@ -1,6 +1,6 @@
 {
   "name": { "message": "MeetSync" },
   "description": {
-    "message": "Captures Google Meet captions, shows them as a chat and exports to .txt/.json, with optional AI correction and summary via Ollama."
+    "message": "Captures Google Meet and Microsoft Teams captions, shows them as a chat and exports .txt/.json; AI summary & Q&A via Ollama."
   }
 }

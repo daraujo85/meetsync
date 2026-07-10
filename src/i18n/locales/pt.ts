@@ -291,9 +291,9 @@ export const pt = {
   popup: {
     privacy: 'Privacidade',
     help: 'Ajuda',
-    outsideMsg1Html: 'O MeetSync funciona <strong>dentro do Google Meet</strong>.',
+    outsideMsg1Html: 'O MeetSync funciona <strong>no Google Meet e no Microsoft Teams</strong>.',
     outsideMsg2: 'Entre numa reunião para capturar as legendas, ver o chat e exportar a transcrição.',
-    idleMsg1Html: 'Você está no <strong>Google Meet</strong>.',
+    idleMsg1Html: 'Você está numa aba de <strong>reunião</strong> suportada.',
     idleMsg2: 'Entre numa reunião e a captura das legendas começa automaticamente.',
     goToMeet: 'Ir para o Google Meet',
     statusIdle: 'Parado',
