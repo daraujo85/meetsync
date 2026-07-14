@@ -13,6 +13,7 @@ import {
   deleteMeeting,
   setMeetingStarred,
   renameMeeting,
+  updateMeetingSummary,
   buildMeetingBackup,
   importMeetingBackup,
   type HistoryMeta,
@@ -1414,7 +1415,15 @@ export class Panel {
       if (labelEl) labelEl.textContent = hi.dlAiBusy;
       if (subEl) subEl.textContent = hi.dlAiBusySub;
       try {
-        await this.aiExport(session, { correct: true, summary: store.get().settings.includeSummary, existingSummary: summaryText });
+        const { summaryGeneratedNow } = await this.aiExport(session, { correct: true, summary: store.get().settings.includeSummary, existingSummary: summaryText });
+        if (summaryGeneratedNow) {
+          // A ata foi gerada e já persistida (updateMeetingSummary) — reabre o detalhe pra
+          // refletir "Com ata" no botão/segmentado sem precisar sair e voltar ao histórico.
+          this.histMetas = await loadHistory();
+          const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
+          void this.openDetail(fresh);
+          return;
+        }
       } finally {
         aiBusy = false;
         dlAi.classList.remove('is-disabled');
@@ -1943,9 +1952,18 @@ export class Panel {
       try { correctedText = await correctTranscript(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); corrected = true; }
       catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.correctionFailed(err instanceof Error ? err.message : String(err)) }); }
     }
+    let summaryGeneratedNow = false;
     if (!summaryText && opts.summary) {
-      try { summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary); store.patchUi({ summaryText }); }
-      catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) }); }
+      try {
+        summaryText = await summarizeMeeting(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary);
+        summaryGeneratedNow = true;
+        store.patchUi({ summaryText });
+      } catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) }); }
+    }
+    // Persiste a ata gerada agora de volta no registro da reunião — sem isso o histórico
+    // continuava marcando "Sem ata" mesmo depois de já ter baixado o arquivo com a ata.
+    if (summaryGeneratedNow && summaryText) {
+      try { await updateMeetingSummary(session.id, summaryText); } catch { /* ignora — o arquivo já foi baixado normalmente */ }
     }
 
     // Sem título descritivo (é o padrão da plataforma)? Sugere um via IA — só para o arquivo
@@ -1970,6 +1988,8 @@ export class Panel {
     downloadText(buildFilename(session), mainContent);
     if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(exportSession, summaryText)); }
     if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(exportSession, summaryText)); }
+
+    return { summaryGeneratedNow };
   }
 
   // ================= Realtime scheduler =================

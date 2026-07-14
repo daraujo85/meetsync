@@ -6,7 +6,7 @@
 
 import { MS_MARK_URL } from '@/ui/logo';
 import { icons } from '@/ui/icons';
-import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, type HistoryMeta } from '@/services/storage-service';
+import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, updateMeetingSummary, type HistoryMeta } from '@/services/storage-service';
 import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, summarySectionBlock, downloadText, isGenericTitle } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, suggestMeetingTitle } from '@/services/summary-service';
 import type { UserSettings } from '@/types';
@@ -115,7 +115,12 @@ async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
       try { correctedText = await correctTranscript(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary); corrected = true; } catch { /* mantém bruto */ }
     }
     if (s.includeSummary && !summaryText) {
-      try { summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary); } catch { /* sem ata */ }
+      try {
+        summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary);
+        // Persiste a ata gerada agora de volta no histórico — sem isso ele continuava
+        // marcando "Sem ata" mesmo depois de já ter baixado o arquivo com a ata.
+        await updateMeetingSummary(session.id, summaryText);
+      } catch { /* sem ata */ }
     }
     // Sem título descritivo (é o padrão da plataforma)? Sugere um via IA — só para o arquivo
     // exportado; nunca sobrescreve o título salvo no histórico.

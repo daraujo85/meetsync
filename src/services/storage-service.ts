@@ -199,6 +199,27 @@ export async function renameMeeting(id: string, title: string): Promise<void> {
   }
 }
 
+/** Persiste um resumo/ata gerado por download com IA de volta no registro da reunião (índice
+ *  + dados completos) — sem isso o histórico continuava marcando "Sem ata" mesmo depois de o
+ *  usuário já ter gerado a ata via "Baixar .txt com IA". Não mexe em savedAt/ordem da lista. */
+export async function updateMeetingSummary(id: string, summaryText: string): Promise<void> {
+  try {
+    const index = await loadHistory();
+    const meta = index.find((m) => m.id === id);
+    if (meta) meta.hasSummary = true;
+    await chrome.storage.local.set({ [HISTORY_KEY]: index });
+
+    const res = await chrome.storage.local.get(MEETING_PREFIX + id);
+    const saved = res[MEETING_PREFIX + id] as SavedMeeting | undefined;
+    if (saved) {
+      saved.summaryText = summaryText;
+      await chrome.storage.local.set({ [MEETING_PREFIX + id]: saved });
+    }
+  } catch {
+    /* falha ao salvar a ata — ignora, o arquivo já foi baixado com a ata mesmo assim */
+  }
+}
+
 // ---- Backup de reunião (exportar/importar entre dispositivos) ----
 const BACKUP_SCHEMA = 'meetsync-backup';
 const BACKUP_SCHEMA_VERSION = 1;
