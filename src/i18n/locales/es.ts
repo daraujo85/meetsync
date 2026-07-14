@@ -75,6 +75,7 @@ export const es: Messages = {
     copyWhatsapp: 'Copiar para WhatsApp',
     copyWhatsappBusy: 'Formateando…',
     copyWhatsappDone: '¡Copiado!',
+    copyWhatsappError: 'Error al copiar — haz clic de nuevo',
   },
 
   captureStatus: {
@@ -320,6 +321,7 @@ export const es: Messages = {
     copyWhatsappSubNo: 'Esta reunión no tiene acta generada',
     copyWhatsappBusy: 'Formateando…',
     copyWhatsappDone: '¡Copiado!',
+    copyWhatsappError: 'Error al copiar — haz clic de nuevo',
     del: 'Eliminar del historial',
     delSub: 'Borra la transcripción de este dispositivo',
     meetingFallback: 'Reunión',

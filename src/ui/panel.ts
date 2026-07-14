@@ -622,8 +622,15 @@ export class Panel {
           // Ollama indisponível/falhou — cai pro conversor determinístico (sem IA) em vez de nada.
           text = formatSummaryForWhatsapp(s.session, s.ui.summaryText, t().exportFile.untitledMeeting);
         }
-        await navigator.clipboard.writeText(text);
-        waLabel.textContent = t().summaryTab.copyWhatsappDone;
+        try {
+          // Se a aba perdeu o foco durante a chamada ao Ollama (acima), o clipboard recusa
+          // escrever ("Document is not focused") — tenta recuperar o foco antes de escrever.
+          window.focus();
+          await navigator.clipboard.writeText(text);
+          waLabel.textContent = t().summaryTab.copyWhatsappDone;
+        } catch {
+          waLabel.textContent = t().summaryTab.copyWhatsappError;
+        }
       } finally {
         window.setTimeout(() => {
           this.copyWaBtn.disabled = false;
@@ -1603,8 +1610,15 @@ export class Panel {
             // Ollama falhou — cai pro conversor determinístico (sem IA) em vez de nada.
             text = formatSummaryForWhatsapp(session, summaryText, t().exportFile.untitledMeeting);
           }
-          await navigator.clipboard.writeText(text);
-          if (labelEl) labelEl.textContent = hi.copyWhatsappDone;
+          try {
+            // Se a aba perdeu o foco durante a chamada ao Ollama (acima), o clipboard recusa
+            // escrever ("Document is not focused") — tenta recuperar o foco antes de escrever.
+            window.focus();
+            await navigator.clipboard.writeText(text);
+            if (labelEl) labelEl.textContent = hi.copyWhatsappDone;
+          } catch {
+            if (labelEl) labelEl.textContent = hi.copyWhatsappError;
+          }
         } finally {
           window.setTimeout(() => {
             copyWa.classList.remove('is-disabled');

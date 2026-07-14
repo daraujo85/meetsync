@@ -77,6 +77,7 @@ export const pt = {
     copyWhatsapp: 'Copiar para WhatsApp',
     copyWhatsappBusy: 'Formatando…',
     copyWhatsappDone: 'Copiado!',
+    copyWhatsappError: 'Falha ao copiar — clique de novo',
   },
 
   captureStatus: {
@@ -323,6 +324,7 @@ export const pt = {
     copyWhatsappSubNo: 'Esta reunião não tem ata gerada',
     copyWhatsappBusy: 'Formatando…',
     copyWhatsappDone: 'Copiado!',
+    copyWhatsappError: 'Falha ao copiar — clique de novo',
     del: 'Excluir do histórico',
     delSub: 'Apaga a transcrição deste dispositivo',
     meetingFallback: 'Reunião',

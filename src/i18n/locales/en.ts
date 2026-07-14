@@ -75,6 +75,7 @@ export const en: Messages = {
     copyWhatsapp: 'Copy for WhatsApp',
     copyWhatsappBusy: 'Formatting…',
     copyWhatsappDone: 'Copied!',
+    copyWhatsappError: 'Copy failed — click again',
   },
 
   captureStatus: {
@@ -320,6 +321,7 @@ export const en: Messages = {
     copyWhatsappSubNo: 'This meeting has no generated minutes',
     copyWhatsappBusy: 'Formatting…',
     copyWhatsappDone: 'Copied!',
+    copyWhatsappError: 'Copy failed — click again',
     del: 'Delete from history',
     delSub: 'Erases the transcript from this device',
     meetingFallback: 'Meeting',
