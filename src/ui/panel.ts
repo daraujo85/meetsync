@@ -280,6 +280,10 @@ export class Panel {
    *  visualmente QUAL reunião está sendo processada durante uma operação em lote. */
   private histProcessingId: string | null = null;
   private histProcessingLabel = '';
+  /** Reunião cujo detalhe está aberto agora (null = na lista) — usado pra saber se, ao terminar
+   *  um "Gerar resumo/ata"/"Baixar .txt com IA", devemos atualizar o detalhe in-place ou só a
+   *  lista (sem puxar o usuário de volta pra uma tela que ele já deixou). */
+  private currentDetailMeetingId: string | null = null;
   private histImportInput!: HTMLInputElement;
   private histImportStatus!: HTMLElement;
   // modal de confirmação genérico (ex.: excluir reunião)
@@ -1087,7 +1091,17 @@ export class Panel {
     back.addEventListener('click', () => {
       sheet.classList.add('ms-hidden');
       this.lastAboutOpen = false;
-      if (store.get().ui.aboutOpen) store.patchUi({ aboutOpen: false });
+      const s = store.get();
+      if (s.ui.aboutOpen) {
+        // Só entra aqui quando o "Sobre" foi aberto pelo popup (aboutOpen no store), que força
+        // o painel visível (review+expanded) mesmo sem reunião. Sem isso, fechar o "Sobre"
+        // revelava o corpo padrão do painel por baixo — parecendo uma reunião em captura.
+        if (s.ui.review && !s.inMeeting && !s.ended && !s.ui.historyOpen) {
+          store.patchUi({ aboutOpen: false, review: false, expanded: false });
+        } else {
+          store.patchUi({ aboutOpen: false });
+        }
+      }
     });
     return sheet;
   }
@@ -1243,6 +1257,7 @@ export class Panel {
   }
 
   private closeHistory() {
+    this.currentDetailMeetingId = null;
     this.historySheet.classList.add('ms-hidden');
     const s = store.get();
     // Se foi aberto fora de reunião (modo revisão), esconde o painel ao fechar.
@@ -1343,12 +1358,18 @@ export class Panel {
   private async openDetail(m: HistoryMeta) {
     const saved = await loadMeeting(m.id);
     if (!saved) { void this.refreshHistory(); return; }
+    this.currentDetailMeetingId = m.id;
     const session = saved.session;
     const summaryText = saved.summaryText;
 
     const hi = t().history;
     const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: t().header.back, 'aria-label': t().header.back, html: icons.chevronLeft });
-    back.addEventListener('click', () => { this.renderHistoryList(); this.histDetailView.classList.add('ms-hidden'); this.histListView.classList.remove('ms-hidden'); });
+    back.addEventListener('click', () => {
+      this.currentDetailMeetingId = null;
+      this.renderHistoryList();
+      this.histDetailView.classList.add('ms-hidden');
+      this.histListView.classList.remove('ms-hidden');
+    });
 
     const star = el('button', { class: 'ms-icon-btn ms-icon-btn-sm ms-hist-d-star' + (m.starred ? ' is-on' : ''), type: 'button', title: hi.favorite, 'aria-label': hi.favorite, html: m.starred ? icons.starFill : icons.star });
     star.addEventListener('click', () => void (async () => {
@@ -1438,14 +1459,23 @@ export class Panel {
       if (labelEl) labelEl.textContent = hi.dlAiBusy;
       if (subEl) subEl.textContent = hi.dlAiBusySub;
       if (icoEl) icoEl.innerHTML = '<span class="ms-spinner"></span>';
+      // Marca esta reunião como "em processamento" pra lista mostrar o spinner no card dela
+      // caso o usuário volte pro histórico antes de terminar.
+      this.histProcessingId = m.id;
+      this.histProcessingLabel = hi.dlAiBusy;
       try {
         const { summaryGeneratedNow } = await this.aiExport(session, { correct: true, summary: store.get().settings.includeSummary, existingSummary: summaryText });
         if (summaryGeneratedNow) {
-          // A ata foi gerada e já persistida (updateMeetingSummary) — reabre o detalhe pra
-          // refletir "Com ata" no botão/segmentado sem precisar sair e voltar ao histórico.
           this.histMetas = await loadHistory();
           const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
-          void this.openDetail(fresh);
+          if (this.currentDetailMeetingId === m.id) {
+            // Ainda olhando pra essa reunião — reabre pra refletir "Com ata" no botão/segmentado.
+            void this.openDetail(fresh);
+          } else {
+            // Usuário já saiu pra outra tela — só atualiza a lista, sem puxá-lo de volta.
+            this.histProcessingId = null;
+            this.renderHistoryList();
+          }
           return;
         }
       } finally {
@@ -1454,6 +1484,7 @@ export class Panel {
         if (labelEl) labelEl.textContent = prevLabel;
         if (subEl) subEl.textContent = prevSub;
         if (icoEl) icoEl.innerHTML = prevIco;
+        if (this.histProcessingId === m.id) { this.histProcessingId = null; this.renderHistoryList(); }
       }
     })());
     const genAta = this.histAction(
@@ -1472,14 +1503,23 @@ export class Panel {
         genAta.classList.add('is-disabled');
         if (labelEl) labelEl.textContent = hi.genAtaBusy;
         if (icoEl) icoEl.innerHTML = '<span class="ms-spinner"></span>';
+        // Marca esta reunião como "em processamento" pra lista mostrar o spinner no card dela
+        // caso o usuário volte pro histórico antes de terminar.
+        this.histProcessingId = m.id;
+        this.histProcessingLabel = hi.genAtaBusy;
         try {
           const text = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary);
           await updateMeetingSummary(session.id, text);
-          // Ata gerada e persistida — reabre o detalhe pra habilitar a aba Resumo e o botão
-          // "Baixar resumo/ata" sem precisar sair e voltar ao histórico.
           this.histMetas = await loadHistory();
           const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
-          void this.openDetail(fresh);
+          if (this.currentDetailMeetingId === m.id) {
+            // Ainda olhando pra essa reunião — reabre pra habilitar a aba Resumo e "Baixar ata".
+            void this.openDetail(fresh);
+          } else {
+            // Usuário já saiu pra outra tela — só atualiza a lista, sem puxá-lo de volta.
+            this.histProcessingId = null;
+            this.renderHistoryList();
+          }
           return;
         } catch (err) {
           store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) });
@@ -1488,6 +1528,7 @@ export class Panel {
           if (labelEl) labelEl.textContent = prevLabel;
           if (subEl) subEl.textContent = prevSub;
           if (icoEl) icoEl.innerHTML = prevIco;
+          if (this.histProcessingId === m.id) { this.histProcessingId = null; this.renderHistoryList(); }
         }
       })(),
     );
