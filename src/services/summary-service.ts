@@ -144,9 +144,25 @@ export async function summarizeMeetingStream(
   return ollama.generateStream(url, model, await summaryPrompt(session, vocabulary), onChunk);
 }
 
+// Modelos às vezes "se recusam" a sugerir um título (transcrição curta/pouco clara) e devolvem
+// uma frase de recusa em vez de um título — sem validar isso, a recusa virava o título salvo
+// (ex.: "A reunião não contém informações suficientes para sugerir um título."). Rejeita.
+const TITLE_REFUSAL_RE =
+  /não (é poss[ií]vel|h[aá] informa|cont[eé]m informa[cç][aã]o|consigo|foi poss[ií]vel)|not enough information|cannot (determine|generate|provide)|no (puedo|hay suficiente)|sin (t[ií]tulo|informaci[oó]n suficiente)/i;
+
+/** Um título de reunião gerado por IA parece uma recusa/frase longa em vez de um título de
+ *  verdade? Usado tanto para rejeitar na hora quanto para re-tentar títulos já corrompidos
+ *  por uma geração anterior (ex.: rodada em lote antes deste fix). */
+export function looksLikeBadAiTitle(title: string): boolean {
+  const t = (title || '').trim();
+  if (!t) return true;
+  if (TITLE_REFUSAL_RE.test(t)) return true;
+  return t.split(/\s+/).filter(Boolean).length > 12; // título de verdade é curto (~8 palavras)
+}
+
 /** Sugere um título curto para a reunião a partir do assunto da transcrição — usado só quando o
  *  título é o padrão da plataforma (isGenericTitle). Aplica-se apenas ao arquivo exportado;
- *  nunca é salvo no histórico. Retorna undefined se a resposta vier vazia/inválida. */
+ *  nunca é salvo no histórico. Retorna undefined se a resposta vier vazia/inválida/recusa. */
 export async function suggestMeetingTitle(
   session: MeetingSession,
   url: string,
@@ -159,6 +175,6 @@ export async function suggestMeetingTitle(
     .split('\n')[0]!
     .replace(/^["'“”*#\s]+|["'“”*.\s]+$/g, '')
     .trim();
-  if (!title || title.length > 80) return undefined;
+  if (!title || title.length > 80 || looksLikeBadAiTitle(title)) return undefined;
   return title;
 }

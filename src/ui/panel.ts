@@ -30,7 +30,7 @@ import {
   isGenericTitle,
   isGenericTitleText,
 } from '@/services/export-txt';
-import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, type ChatTurn } from '@/services/summary-service';
+import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, type ChatTurn } from '@/services/summary-service';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -1509,6 +1509,12 @@ export class Panel {
 
   // ================= Histórico: geração de títulos em lote + import/export de backup =================
 
+  /** Sem título de verdade — padrão da plataforma OU título corrompido por uma recusa de IA
+   *  numa rodada anterior (ex.: "A reunião não contém informações suficientes..."). */
+  private needsTitle(m: HistoryMeta): boolean {
+    return isGenericTitleText(m.title, m.meetingCode) || looksLikeBadAiTitle(m.title);
+  }
+
   /** Mostra/esconde o banner "N reuniões sem título — sugerir com IA?" no topo da lista. */
   private renderHistTitleBanner() {
     const hi = t().history;
@@ -1516,7 +1522,7 @@ export class Panel {
       this.histTitleBanner.classList.remove('ms-hidden');
       return;
     }
-    const count = this.histMetas.filter((m) => isGenericTitleText(m.title, m.meetingCode)).length;
+    const count = this.histMetas.filter((m) => this.needsTitle(m)).length;
     if (count === 0 || !this.ollamaReady(store.get())) {
       this.histTitleBanner.classList.add('ms-hidden');
       return;
@@ -1538,7 +1544,7 @@ export class Panel {
     if (this.histBulkTitleBusy) return;
     const s = store.get();
     if (!this.ollamaReady(s)) return;
-    const targets = this.histMetas.filter((m) => isGenericTitleText(m.title, m.meetingCode));
+    const targets = this.histMetas.filter((m) => this.needsTitle(m));
     if (!targets.length) return;
 
     this.histBulkTitleBusy = true;

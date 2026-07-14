@@ -9,8 +9,11 @@ function pad(n: number): string {
 }
 
 // Títulos padrão que as plataformas colocam sozinhas na aba (não descrevem o assunto real):
-// Meet ("Meet: xxx-yyyy-zzz"), Teams PT/EN/ES ("Reunião"/"Meeting"/"Reunión" [em "Canal"]).
-const GENERIC_TITLE_RE = /^(meet:|reuni(ã|a)o\b|meeting\b|reuni[oó]n\b)/i;
+// Meet ("Meet: xxx-yyyy-zzz"), Teams PT/EN/ES ("Reunião"/"Meeting"/"Reunión" [em/in/en "Canal"]).
+// Âncora no início E no fim (^...$): sem isso, um título BOM gerado por IA que comece com a
+// palavra "Reunião" (ex.: "Reunião sobre o workflow do FGTS") também batia aqui — fazendo a
+// geração em lote ficar num loop infinito (o título novo "parecia" genérico de novo).
+const GENERIC_TITLE_RE = /^(meet:\s*[a-z0-9-]+|reuni(ã|a)o(\s+em\s+["“].*["”])?|meeting(\s+in\s+["“].*["”])?|reuni[oó]n(\s+en\s+["“].*["”])?)$/i;
 
 /** O título (já resolvido, ex.: de um HistoryMeta) não é descritivo — é o padrão da
  *  plataforma ou o próprio código da reunião? */
