@@ -8,6 +8,18 @@ function pad(n: number): string {
   return n.toString().padStart(2, '0');
 }
 
+// Títulos padrão que as plataformas colocam sozinhas na aba (não descrevem o assunto real):
+// Meet ("Meet: xxx-yyyy-zzz"), Teams PT/EN/ES ("Reunião"/"Meeting"/"Reunión" [em "Canal"]).
+const GENERIC_TITLE_RE = /^(meet:|reuni(ã|a)o\b|meeting\b|reuni[oó]n\b)/i;
+
+/** A reunião não tem um título descritivo real (é o padrão da plataforma ou o próprio código)? */
+export function isGenericTitle(session: MeetingSession): boolean {
+  const title = (session.meetingTitle || '').trim();
+  if (!title) return true;
+  if (session.meetingCode && title === session.meetingCode) return true;
+  return GENERIC_TITLE_RE.test(title);
+}
+
 /** HH:MM em horário local a partir de ISO. */
 export function formatTime(iso?: string): string {
   if (!iso) return '--:--';

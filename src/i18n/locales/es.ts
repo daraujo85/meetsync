@@ -443,6 +443,17 @@ ${transcript}
 ${conversation ? `\nConversación hasta ahora (P = pregunta, R = respuesta):\n${conversation}\n` : ''}
 Pregunta: ${question}
 Respuesta:`,
+    titlePrompt: (vocabulary: string, transcript: string) =>
+      `Recibirás la transcripción de una reunión sin título descriptivo definido.
+Sugiere un título corto (hasta 8 palabras) que resuma el tema principal, en español.
+
+Reglas:
+- Responde SOLO con el título, nada más.
+- NO uses comillas, markdown, emojis, puntuación final ni prefijos como "Título:".
+- Sé específico sobre el tema tratado — evita algo genérico como "Reunión de equipo" si puedes ser más preciso.
+${vocabulary}
+Transcripción:
+${transcript}`,
     vocabularyClause: (terms: string) =>
       `\nVOCABULARIO DEL NEGOCIO — nombres de empresas, productos y siglas del usuario. La transcripción
 automática de Google suele escribir mal estos términos (ej.: "acme corp" → "AcmeCorp"). Cuando una

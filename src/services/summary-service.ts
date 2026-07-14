@@ -113,3 +113,22 @@ export async function summarizeMeetingStream(
 ): Promise<string> {
   return ollama.generateStream(url, model, summaryPrompt(session, vocabulary), onChunk);
 }
+
+/** Sugere um título curto para a reunião a partir do assunto da transcrição — usado só quando o
+ *  título é o padrão da plataforma (isGenericTitle). Aplica-se apenas ao arquivo exportado;
+ *  nunca é salvo no histórico. Retorna undefined se a resposta vier vazia/inválida. */
+export async function suggestMeetingTitle(
+  session: MeetingSession,
+  url: string,
+  model: string,
+  vocabulary?: string[],
+): Promise<string | undefined> {
+  const prompt = t().ai.titlePrompt(vocabularyClause(vocabulary), buildTranscriptBody(session));
+  const raw = await ollama.generate(url, model, prompt);
+  const title = raw
+    .split('\n')[0]!
+    .replace(/^["'“”*#\s]+|["'“”*.\s]+$/g, '')
+    .trim();
+  if (!title || title.length > 80) return undefined;
+  return title;
+}

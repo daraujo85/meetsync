@@ -23,8 +23,9 @@ import {
   summarySectionBlock,
   downloadText,
   formatTime,
+  isGenericTitle,
 } from '@/services/export-txt';
-import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, type ChatTurn } from '@/services/summary-service';
+import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, type ChatTurn } from '@/services/summary-service';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -1276,6 +1277,7 @@ export class Panel {
     }
     children.push(
       el('div', { class: 'ms-hist-c-chips' }, [
+        metaChip(icons.people, t().history.people(m.participants.length)),
         metaChip(icons.chatBubble, t().history.lines(m.lines)),
         m.hasSummary ? metaChip(icons.doc, t().history.withAta, true) : metaChip(icons.doc, t().history.withoutAta),
         el('span', { class: 'ms-hist-c-spacer' }),
@@ -1791,16 +1793,28 @@ export class Panel {
       catch (err) { store.setCaptureStatus('error'); store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) }); }
     }
 
+    // Sem título descritivo (é o padrão da plataforma)? Sugere um via IA — só para o arquivo
+    // exportado; nunca sobrescreve o título salvo no histórico.
+    let exportSession = session;
+    if (isGenericTitle(session)) {
+      try {
+        const suggested = await suggestMeetingTitle(session, settings.ollamaUrl, settings.ollamaModel!, settings.vocabulary);
+        if (suggested) exportSession = { ...session, meetingTitle: suggested };
+      } catch {
+        /* mantém o título original */
+      }
+    }
+
     const includeSummaryInline = !!summaryText && !settings.separateSummaryFile;
     const mainContent = corrected
-      ? (settings.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (includeSummaryInline ? summarySectionBlock(summaryText!) : '')
-      : buildTxt(session, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
+      ? (settings.includeHeaderByDefault ? buildHeader(exportSession) : '') + correctedText + (includeSummaryInline ? summarySectionBlock(summaryText!) : '')
+      : buildTxt(exportSession, { includeHeader: settings.includeHeaderByDefault, summaryText: includeSummaryInline ? summaryText : undefined });
 
     // Espaça os downloads — o Chrome descarta downloads automáticos disparados juntos.
     const gap = () => new Promise<void>((r) => setTimeout(r, 500));
     downloadText(buildFilename(session), mainContent);
-    if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText)); }
-    if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
+    if (summaryText && settings.separateSummaryFile) { await gap(); downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(exportSession, summaryText)); }
+    if (settings.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(exportSession, summaryText)); }
   }
 
   // ================= Realtime scheduler =================

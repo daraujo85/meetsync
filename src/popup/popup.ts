@@ -7,8 +7,8 @@
 import { MS_MARK_URL } from '@/ui/logo';
 import { icons } from '@/ui/icons';
 import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, type HistoryMeta } from '@/services/storage-service';
-import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, summarySectionBlock, downloadText } from '@/services/export-txt';
-import { correctTranscript, summarizeMeeting } from '@/services/summary-service';
+import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, summarySectionBlock, downloadText, isGenericTitle } from '@/services/export-txt';
+import { correctTranscript, summarizeMeeting, suggestMeetingTitle } from '@/services/summary-service';
 import type { UserSettings } from '@/types';
 import { t, bcp47, setLocale, resolveLocale } from '@/i18n';
 
@@ -117,14 +117,25 @@ async function downloadWithAi(meta: HistoryMeta, btn: HTMLButtonElement) {
     if (s.includeSummary && !summaryText) {
       try { summaryText = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary); } catch { /* sem ata */ }
     }
+    // Sem título descritivo (é o padrão da plataforma)? Sugere um via IA — só para o arquivo
+    // exportado; nunca sobrescreve o título salvo no histórico.
+    let exportSession = session;
+    if (isGenericTitle(session)) {
+      try {
+        const suggested = await suggestMeetingTitle(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary);
+        if (suggested) exportSession = { ...session, meetingTitle: suggested };
+      } catch {
+        /* mantém o título original */
+      }
+    }
     const inlineSummary = !!summaryText && !s.separateSummaryFile;
     const main = corrected
-      ? (s.includeHeaderByDefault ? buildHeader(session) : '') + correctedText + (inlineSummary ? summarySectionBlock(summaryText!) : '')
-      : buildTxt(session, { includeHeader: s.includeHeaderByDefault, summaryText: inlineSummary ? summaryText : undefined });
+      ? (s.includeHeaderByDefault ? buildHeader(exportSession) : '') + correctedText + (inlineSummary ? summarySectionBlock(summaryText!) : '')
+      : buildTxt(exportSession, { includeHeader: s.includeHeaderByDefault, summaryText: inlineSummary ? summaryText : undefined });
     const gap = () => new Promise<void>((r) => setTimeout(r, 500));
     downloadText(buildFilename(session), main);
-    if (summaryText && s.separateSummaryFile) { await gap(); downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(session, summaryText)); }
-    if (s.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(session, summaryText)); }
+    if (summaryText && s.separateSummaryFile) { await gap(); downloadText(buildFilename(session, '_resumo'), buildSummaryTxt(exportSession, summaryText)); }
+    if (s.exportJson) { await gap(); downloadText(buildFilename(session, '', 'json'), buildMeetingJson(exportSession, summaryText)); }
   } finally {
     btn.disabled = false;
     if (original) btn.textContent = original;

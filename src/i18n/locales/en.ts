@@ -443,6 +443,17 @@ ${transcript}
 ${conversation ? `\nConversation so far (Q = question, A = answer):\n${conversation}\n` : ''}
 Question: ${question}
 Answer:`,
+    titlePrompt: (vocabulary: string, transcript: string) =>
+      `You will receive the transcript of a meeting with no descriptive title set.
+Suggest a short title (up to 8 words) that summarizes the main topic, in English.
+
+Rules:
+- Reply ONLY with the title, nothing else.
+- Do NOT use quotes, markdown, emojis, trailing punctuation or prefixes like "Title:".
+- Be specific to the topic discussed — avoid something generic like "Team meeting" if you can be more precise.
+${vocabulary}
+Transcript:
+${transcript}`,
     vocabularyClause: (terms: string) =>
       `\nBUSINESS VOCABULARY — company names, products and acronyms used by the user. Automatic Google
 transcription often misspells these terms (e.g.: "acme corp" → "AcmeCorp"). When a word in the text
