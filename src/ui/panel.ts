@@ -32,6 +32,7 @@ import {
 } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, formatSummaryForWhatsappAi, type ChatTurn } from '@/services/summary-service';
 import { formatSummaryForWhatsapp } from '@/services/whatsapp-format';
+import { buildDeterministicSummary } from '@/services/deterministic-summary';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -1609,6 +1610,24 @@ export class Panel {
     const exportBackup = this.histAction(icons.exportFile, hi.exportBackup, hi.exportBackupSub, false, () =>
       downloadText(buildFilename(session, '_backup', 'json'), buildMeetingBackup(m, saved)),
     );
+    const genAtaNoAi = this.histAction(icons.doc, hi.genAtaNoAi, summaryText ? hi.genAtaSubDone : hi.genAtaNoAiSub, !!summaryText, () => void (async () => {
+      const text = buildDeterministicSummary(session, t().exportFile.untitledMeeting, {
+        title: hi.noAiSummaryTitle,
+        disclaimer: hi.noAiSummaryDisclaimer,
+        meeting: hi.noAiSummaryMeeting,
+        duration: hi.noAiSummaryDuration,
+        participants: hi.noAiSummaryParticipants,
+        participation: hi.noAiSummaryParticipation,
+        words: hi.noAiSummaryWords,
+        lines: hi.noAiSummaryLines,
+        excerpts: hi.noAiSummaryExcerpts,
+      });
+      await updateMeetingSummary(session.id, text);
+      this.histMetas = await loadHistory();
+      const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
+      if (this.currentDetailMeetingId === m.id) void this.openDetail(fresh);
+      else this.renderHistoryList();
+    })());
     const del = this.histAction(icons.trash, hi.del, hi.delSub, false, () => void (async () => {
       const ok = await this.confirmDialog(hi.deleteConfirmTitle, hi.deleteConfirmMsg, hi.deleteConfirmYes, hi.deleteConfirmNo);
       if (!ok) return;
@@ -1628,6 +1647,8 @@ export class Panel {
       el('div', { class: 'ms-hist-actions' }, [askAct, dlAi, genAta]),
       this.sectionLabel(hi.actionsExport, icons.download),
       el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, copyWa, exportBackup]),
+      this.sectionLabel(hi.actionsNoAi, icons.doc),
+      el('div', { class: 'ms-hist-actions' }, [genAtaNoAi]),
       el('div', { class: 'ms-hist-actions' }, [del]),
     ]);
 
