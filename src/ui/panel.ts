@@ -1431,6 +1431,37 @@ export class Panel {
         if (subEl) subEl.textContent = prevSub;
       }
     })());
+    const genAta = this.histAction(
+      icons.sparkles,
+      hi.genAta,
+      summaryText ? hi.genAtaSubDone : aiReady ? hi.genAtaSub : hi.dlAiSubNoOllama,
+      !aiReady || !!summaryText,
+      () => void (async () => {
+        const s = store.get().settings;
+        const labelEl = genAta.querySelector('.ms-hist-action-label');
+        const subEl = genAta.querySelector('.ms-hist-action-sub');
+        const prevLabel = labelEl?.textContent ?? '';
+        const prevSub = subEl?.textContent ?? '';
+        genAta.classList.add('is-disabled');
+        if (labelEl) labelEl.textContent = hi.genAtaBusy;
+        try {
+          const text = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary);
+          await updateMeetingSummary(session.id, text);
+          // Ata gerada e persistida — reabre o detalhe pra habilitar a aba Resumo e o botão
+          // "Baixar resumo/ata" sem precisar sair e voltar ao histórico.
+          this.histMetas = await loadHistory();
+          const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
+          void this.openDetail(fresh);
+          return;
+        } catch (err) {
+          store.patchOllama({ lastError: t().ollamaStatus.summaryFailed(err instanceof Error ? err.message : String(err)) });
+        } finally {
+          genAta.classList.remove('is-disabled');
+          if (labelEl) labelEl.textContent = prevLabel;
+          if (subEl) subEl.textContent = prevSub;
+        }
+      })(),
+    );
     const dlAta = this.histAction(icons.doc, hi.dlAta, summaryText ? hi.dlAtaSubYes : hi.dlAtaSubNo, !summaryText, () => {
       if (summaryText) downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText));
     });
@@ -1453,7 +1484,7 @@ export class Panel {
       seg,
       previewBox,
       this.sectionLabel(hi.actions, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, dlAta, exportBackup, del]),
+      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, genAta, dlAta, exportBackup, del]),
     ]);
 
     renderPreview();
