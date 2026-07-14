@@ -29,6 +29,19 @@ export function isGenericTitle(session: MeetingSession): boolean {
   return isGenericTitleText(session.meetingTitle || '', session.meetingCode);
 }
 
+/** Título determinístico a partir dos participantes — usado quando a IA se recusa a sugerir um
+ *  título (transcrição curta/pouco clara) durante a geração em LOTE. Sem isso, essas reuniões
+ *  ficam com o título genérico pra sempre (a recusa nunca vira um título válido) e o banner "N
+ *  reuniões sem título" nunca chega a zero, dando a impressão de um loop infinito. */
+export function buildFallbackTitle(session: MeetingSession): string {
+  const hi = t().history;
+  const names = session.participants.map((p) => p.name.split(' ')[0]).filter(Boolean);
+  if (!names.length) return t().exportFile.untitledMeeting;
+  if (names.length === 1) return hi.fallbackTitleOne(names[0]!);
+  if (names.length === 2) return hi.fallbackTitleTwo(names[0]!, names[1]!);
+  return hi.fallbackTitleMany(names[0]!, names[1]!, names.length - 2);
+}
+
 /** HH:MM em horário local a partir de ISO. */
 export function formatTime(iso?: string): string {
   if (!iso) return '--:--';

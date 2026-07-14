@@ -29,6 +29,7 @@ import {
   formatTime,
   isGenericTitle,
   isGenericTitleText,
+  buildFallbackTitle,
 } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, formatSummaryForWhatsappAi, type ChatTurn } from '@/services/summary-service';
 import { formatSummaryForWhatsapp } from '@/services/whatsapp-format';
@@ -1751,7 +1752,7 @@ export class Panel {
   /** Gera (via IA) um título para cada reunião com título genérico e PERSISTE no histórico
    *  (diferente do download com IA, que só sugere para o arquivo baixado). */
   private async runBulkTitleGeneration() {
-    if (this.histBulkTitleBusy || this.histBulkAtaBusy) return;
+    if (this.histBulkTitleBusy || this.histBulkAtaBusy || this.histBulkAtaNoAiBusy) return;
     const s = store.get();
     if (!this.ollamaReady(s)) return;
     const targets = this.histMetas.filter((m) => this.needsTitle(m));
@@ -1768,11 +1769,14 @@ export class Panel {
       try {
         const saved = await loadMeeting(m.id);
         if (saved && saved.session.transcript.length > 0) {
-          const title = await suggestMeetingTitle(saved.session, s.settings.ollamaUrl, s.settings.ollamaModel!, s.settings.vocabulary);
-          if (title) {
-            await renameMeeting(m.id, title);
-            m.title = title;
-          }
+          // Transcrição curta/pouco clara faz a IA se recusar (suggestMeetingTitle devolve
+          // undefined de propósito, pra não salvar a recusa como título) — sem um título de
+          // reserva aqui, essas reuniões nunca saem de "sem título" e o banner nunca zera,
+          // dando a impressão de loop infinito a cada nova rodada em lote.
+          const title = (await suggestMeetingTitle(saved.session, s.settings.ollamaUrl, s.settings.ollamaModel!, s.settings.vocabulary))
+            ?? buildFallbackTitle(saved.session);
+          await renameMeeting(m.id, title);
+          m.title = title;
         }
       } catch {
         /* segue pro próximo */
