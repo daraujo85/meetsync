@@ -249,7 +249,7 @@ export const en: Messages = {
 
   about: {
     title: 'About',
-    version: 'Version MVP 0.1',
+    version: (v: string) => `Version ${v}`,
     desc: 'Captures and organizes the captions of your Google Meet meetings and exports the transcript as .txt — right in the browser, privately.',
     devBy: 'Built by DevSync',
     privacy: 'Meeting data stays in your browser. Nothing is sent to external services without your action.',

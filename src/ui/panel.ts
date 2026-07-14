@@ -1076,7 +1076,7 @@ export class Panel {
       el('div', { class: 'ms-about-body ms-scroll' }, [
         el('div', { class: 'ms-about-logo' }, [logoImg(72)]),
         el('span', { class: 'ms-wordmark ms-wordmark-lg' }, [el('span', { class: 'ms-wm-meet', text: 'Meet' }), el('span', { class: 'ms-wm-sync', text: 'Sync' })]),
-        el('div', { class: 'ms-about-ver', text: ab.version }),
+        el('div', { class: 'ms-about-ver', text: ab.version(chrome.runtime.getManifest().version) }),
         el('p', { class: 'ms-about-desc', text: ab.desc }),
         el('div', { class: 'ms-about-sep' }),
         el('div', { class: 'ms-section-title', text: ab.devBy }),
@@ -1430,11 +1430,14 @@ export class Panel {
       aiBusy = true;
       const labelEl = dlAi.querySelector('.ms-hist-action-label');
       const subEl = dlAi.querySelector('.ms-hist-action-sub');
+      const icoEl = dlAi.querySelector('.ms-hist-action-ico');
       const prevLabel = labelEl?.textContent ?? '';
       const prevSub = subEl?.textContent ?? '';
+      const prevIco = icoEl?.innerHTML ?? '';
       dlAi.classList.add('is-disabled');
       if (labelEl) labelEl.textContent = hi.dlAiBusy;
       if (subEl) subEl.textContent = hi.dlAiBusySub;
+      if (icoEl) icoEl.innerHTML = '<span class="ms-spinner"></span>';
       try {
         const { summaryGeneratedNow } = await this.aiExport(session, { correct: true, summary: store.get().settings.includeSummary, existingSummary: summaryText });
         if (summaryGeneratedNow) {
@@ -1450,6 +1453,7 @@ export class Panel {
         dlAi.classList.remove('is-disabled');
         if (labelEl) labelEl.textContent = prevLabel;
         if (subEl) subEl.textContent = prevSub;
+        if (icoEl) icoEl.innerHTML = prevIco;
       }
     })());
     const genAta = this.histAction(
@@ -1461,10 +1465,13 @@ export class Panel {
         const s = store.get().settings;
         const labelEl = genAta.querySelector('.ms-hist-action-label');
         const subEl = genAta.querySelector('.ms-hist-action-sub');
+        const icoEl = genAta.querySelector('.ms-hist-action-ico');
         const prevLabel = labelEl?.textContent ?? '';
         const prevSub = subEl?.textContent ?? '';
+        const prevIco = icoEl?.innerHTML ?? '';
         genAta.classList.add('is-disabled');
         if (labelEl) labelEl.textContent = hi.genAtaBusy;
+        if (icoEl) icoEl.innerHTML = '<span class="ms-spinner"></span>';
         try {
           const text = await summarizeMeeting(session, s.ollamaUrl, s.ollamaModel!, s.vocabulary);
           await updateMeetingSummary(session.id, text);
@@ -1480,6 +1487,7 @@ export class Panel {
           genAta.classList.remove('is-disabled');
           if (labelEl) labelEl.textContent = prevLabel;
           if (subEl) subEl.textContent = prevSub;
+          if (icoEl) icoEl.innerHTML = prevIco;
         }
       })(),
     );

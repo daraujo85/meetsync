@@ -252,7 +252,7 @@ export const pt = {
 
   about: {
     title: 'Sobre',
-    version: 'Versão MVP 0.1',
+    version: (v: string) => `Versão ${v}`,
     desc: 'Captura e organiza as legendas das suas reuniões do Google Meet e exporta a transcrição em .txt — direto no navegador, com privacidade.',
     devBy: 'Desenvolvido pela DevSync',
     privacy: 'Os dados da reunião ficam no seu navegador. Nada é enviado para serviços externos sem a sua ação.',

@@ -249,7 +249,7 @@ export const es: Messages = {
 
   about: {
     title: 'Acerca de',
-    version: 'Versión MVP 0.1',
+    version: (v: string) => `Versión ${v}`,
     desc: 'Captura y organiza los subtítulos de tus reuniones de Google Meet y exporta la transcripción en .txt — directo en el navegador, con privacidad.',
     devBy: 'Desarrollado por DevSync',
     privacy: 'Los datos de la reunión quedan en tu navegador. Nada se envía a servicios externos sin tu acción.',
