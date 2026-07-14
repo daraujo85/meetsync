@@ -160,6 +160,17 @@ export function looksLikeBadAiTitle(title: string): boolean {
   return t.split(/\s+/).filter(Boolean).length > 12; // título de verdade é curto (~8 palavras)
 }
 
+// Título só precisa do assunto geral — não da reunião inteira. Reuniões longas (centenas de
+// linhas) mandadas por inteiro no prompt podem estourar o contexto de modelos locais pequenos,
+// fazendo a resposta sair torta (justamente as reuniões mais RICAS em conteúdo, que deveriam ser
+// as mais fáceis de titular, eram as que mais falhavam). Início + fim costuma bastar pro tema.
+const TITLE_TRANSCRIPT_BUDGET = 6000;
+function sampleForTitle(transcript: string): string {
+  if (transcript.length <= TITLE_TRANSCRIPT_BUDGET) return transcript;
+  const half = Math.floor(TITLE_TRANSCRIPT_BUDGET / 2);
+  return `${transcript.slice(0, half)}\n[...]\n${transcript.slice(-half)}`;
+}
+
 /** Sugere um título curto para a reunião a partir do assunto da transcrição — usado só quando o
  *  título é o padrão da plataforma (isGenericTitle). Aplica-se apenas ao arquivo exportado;
  *  nunca é salvo no histórico. Retorna undefined se a resposta vier vazia/inválida/recusa. */
@@ -169,14 +180,15 @@ export async function suggestMeetingTitle(
   model: string,
   vocabulary?: string[],
 ): Promise<string | undefined> {
-  const prompt = t().ai.titlePrompt(vocabularyClause(vocabulary), buildTranscriptBody(session));
+  const prompt = t().ai.titlePrompt(vocabularyClause(vocabulary), sampleForTitle(buildTranscriptBody(session)));
   const raw = await ollama.generate(url, model, prompt);
-  const title = raw
-    .split('\n')[0]!
-    .replace(/^["'“”*#\s]+|["'“”*.\s]+$/g, '')
-    .trim();
-  if (!title || title.length > 80 || looksLikeBadAiTitle(title)) return undefined;
-  return title;
+  // Modelos locais às vezes respondem com uma frase antes do título de verdade (ex.: "Claro,
+  // aqui está um título:") — em vez de olhar só a 1ª linha, procura a primeira que seja válida.
+  for (const line of raw.split('\n')) {
+    const title = line.replace(/^["'“”*#\s]+|["'“”*.\s]+$/g, '').trim();
+    if (title && title.length <= 80 && !looksLikeBadAiTitle(title)) return title;
+  }
+  return undefined;
 }
 
 /** Reformata uma ata JÁ GERADA para colar no WhatsApp (negrito com um asterisco, emojis por
