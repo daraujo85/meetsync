@@ -1617,7 +1617,7 @@ export class Panel {
     const exportBackup = this.histAction(icons.exportFile, hi.exportBackup, hi.exportBackupSub, false, () =>
       downloadText(buildFilename(session, '_backup', 'json'), buildMeetingBackup(m, saved)),
     );
-    const genAtaNoAi = this.histAction(icons.doc, hi.genAtaNoAi, summaryText ? hi.genAtaSubDone : hi.genAtaNoAiSub, !!summaryText, () => void (async () => {
+    const genAtaNoAi = this.histAction(icons.doc, hi.genAtaNoAi, summaryText ? hi.genAtaNoAiRegenSub : hi.genAtaNoAiSub, false, () => void (async () => {
       const text = buildDeterministicSummaryI18n(session);
       await updateMeetingSummary(session.id, text);
       this.histMetas = await loadHistory();

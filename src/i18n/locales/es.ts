@@ -282,6 +282,7 @@ export const es: Messages = {
     actionsNoAi: 'Sin IA (experimental)',
     genAtaNoAi: 'Generar resumen sin IA (prueba)',
     genAtaNoAiSub: 'Segmenta por tema, detecta decisiones/acciones/plazos/bloqueos mediante patrones de lenguaje y elimina redundancia — no interpreta el contenido como lo haría una IA',
+    genAtaNoAiRegenSub: 'Regenera con el algoritmo actual — reemplaza el resumen existente',
     noAiSummaryTitle: 'Resumen automático (sin IA)',
     noAiSummaryDisclaimer: 'Generado por código determinístico (TextTiling + TextRank + patrones de lenguaje) — las secciones de decisiones/acciones/plazos/bloqueos/preguntas son heurísticas (pueden tener falsos positivos/negativos); no interpreta el contenido como lo haría una IA.',
     noAiSummaryMeeting: 'Reunión',

@@ -285,6 +285,7 @@ export const pt = {
     actionsNoAi: 'Sem IA (experimental)',
     genAtaNoAi: 'Gerar resumo sem IA (teste)',
     genAtaNoAiSub: 'Segmenta por assunto, identifica decisões/ações/prazos/bloqueios por padrões de linguagem e remove redundância — sem interpretar o conteúdo como uma IA faria',
+    genAtaNoAiRegenSub: 'Gera de novo com o algoritmo atual — substitui a ata existente',
     noAiSummaryTitle: 'Resumo automático (sem IA)',
     noAiSummaryDisclaimer: 'Gerado por código determinístico (TextTiling + TextRank + padrões de linguagem) — as seções de decisões/ações/prazos/bloqueios/questões são heurísticas (podem ter falsos positivos/negativos); não interpreta o conteúdo como uma IA faria.',
     noAiSummaryMeeting: 'Reunião',
