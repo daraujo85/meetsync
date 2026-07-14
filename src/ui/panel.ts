@@ -1398,11 +1398,11 @@ export class Panel {
     });
 
     // ações
-    const askAct = this.histAction(icons.chatBubble, t().ask.historyAction, t().ask.historyActionSub, false, () => this.openAsk(session, m.title));
+    const aiReady = this.ollamaReady(store.get());
+    const askAct = this.histAction(icons.chatBubble, t().ask.historyAction, aiReady ? t().ask.historyActionSub : hi.dlAiSubNoOllama, !aiReady, () => this.openAsk(session, m.title));
     const dlTxt = this.histAction(icons.download, hi.dlTxt, hi.dlTxtSub, false, () =>
       downloadText(buildFilename(session), buildTxt(session, { includeHeader: true })),
     );
-    const aiReady = this.ollamaReady(store.get());
     let aiBusy = false;
     const dlAi = this.histAction(icons.sparkles, hi.dlAi, aiReady ? hi.dlAiSub : hi.dlAiSubNoOllama, !aiReady, () => void (async () => {
       if (aiBusy) return;
@@ -1483,8 +1483,11 @@ export class Panel {
       people,
       seg,
       previewBox,
-      this.sectionLabel(hi.actions, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, genAta, dlAta, exportBackup, del]),
+      this.sectionLabel(hi.actionsAi, icons.sparkles),
+      el('div', { class: 'ms-hist-actions' }, [askAct, dlAi, genAta]),
+      this.sectionLabel(hi.actionsExport, icons.download),
+      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, exportBackup]),
+      el('div', { class: 'ms-hist-actions' }, [del]),
     ]);
 
     renderPreview();
@@ -1494,7 +1497,7 @@ export class Panel {
   }
 
   private histAction(icon: string, label: string, sub: string, disabled: boolean, onClick: () => void, danger = false): HTMLElement {
-    const row = el('button', { class: 'ms-hist-action' + (danger ? ' is-danger' : '') + (disabled ? ' is-disabled' : ''), type: 'button' }, [
+    const row = el('button', { class: 'ms-hist-action' + (danger ? ' is-danger' : '') + (disabled ? ' is-disabled' : ''), type: 'button', title: `${label} — ${sub}` }, [
       el('span', { class: 'ms-hist-action-ico', html: icon }),
       el('div', { class: 'ms-hist-action-body' }, [el('div', { class: 'ms-hist-action-label', text: label }), el('div', { class: 'ms-hist-action-sub', text: sub })]),
       ...(danger ? [] : [el('span', { class: 'ms-hist-action-chev', html: icons.chevronRight })]),

@@ -277,6 +277,8 @@ export const pt = {
     people: (n: number) => `${n} pessoas`,
     participants: 'Participantes',
     actions: 'Ações',
+    actionsAi: 'Com IA',
+    actionsExport: 'Exportar',
     previewFoot: (n: number) => `Prévia · ${n} linhas no total`,
     noAtaGenerated: 'Esta reunião não tem ata gerada.',
     dlTxt: 'Baixar transcrição (.txt)',

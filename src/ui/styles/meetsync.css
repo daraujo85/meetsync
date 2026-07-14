@@ -954,7 +954,8 @@ button {
 .ms-hist-pv-text { font-size: 13px; color: var(--ms-text-secondary); line-height: 1.5; margin-top: 2px; }
 .ms-hist-pv-foot { font-size: 11.5px; color: var(--ms-text-muted); text-align: center; padding-top: 8px; }
 .ms-hist-pv-summary { font-size: 13px; color: var(--ms-text-secondary); line-height: 1.6; padding: 6px 0; }
-.ms-hist-actions { display: flex; flex-direction: column; gap: 8px; }
+.ms-hist-actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.ms-hist-actions:last-of-type { margin-bottom: 0; }
 .ms-hist-action { display: flex; align-items: center; gap: 11px; width: 100%; text-align: left; cursor: pointer; background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-border-subtle); border-radius: 10px; padding: 11px 13px; font-family: var(--ms-font); transition: background 0.15s ease; }
 .ms-hist-action:hover { background: var(--ms-bg-surface-hover); }
 .ms-hist-action.is-danger { border-color: rgba(242, 139, 130, 0.32); }

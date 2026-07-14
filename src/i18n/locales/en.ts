@@ -274,6 +274,8 @@ export const en: Messages = {
     people: (n: number) => `${n} people`,
     participants: 'Participants',
     actions: 'Actions',
+    actionsAi: 'With AI',
+    actionsExport: 'Export',
     previewFoot: (n: number) => `Preview · ${n} lines in total`,
     noAtaGenerated: 'This meeting has no generated minutes.',
     dlTxt: 'Download transcript (.txt)',
