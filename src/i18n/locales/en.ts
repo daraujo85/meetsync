@@ -72,6 +72,9 @@ export const en: Messages = {
     rtHelp: 'Updates the minutes automatically, via Ollama streaming.',
     updateEvery: 'Update every',
     min: 'min',
+    copyWhatsapp: 'Copy for WhatsApp',
+    copyWhatsappBusy: 'Formatting…',
+    copyWhatsappDone: 'Copied!',
   },
 
   captureStatus: {
@@ -292,6 +295,11 @@ export const en: Messages = {
     dlAta: 'Download summary / minutes',
     dlAtaSubYes: 'Structured minutes for this meeting',
     dlAtaSubNo: 'This meeting has no generated minutes',
+    copyWhatsapp: 'Copy for WhatsApp',
+    copyWhatsappSub: 'Copies the formatted minutes (bold, lists, emojis)',
+    copyWhatsappSubNo: 'This meeting has no generated minutes',
+    copyWhatsappBusy: 'Formatting…',
+    copyWhatsappDone: 'Copied!',
     del: 'Delete from history',
     delSub: 'Erases the transcript from this device',
     meetingFallback: 'Meeting',
@@ -299,6 +307,9 @@ export const en: Messages = {
     generateTitlesHint: (n: number) => `${n} untitled ${n === 1 ? 'meeting' : 'meetings'} — suggest with AI?`,
     generatingTitles: (done: number, total: number) => `Generating titles… ${done}/${total}`,
     generatingTitleCard: 'Generating title…',
+    generateAtas: 'Generate minutes with AI',
+    generateAtasHint: (n: number) => `${n} ${n === 1 ? 'meeting' : 'meetings'} without minutes — generate with AI?`,
+    generatingAtas: (done: number, total: number) => `Generating minutes… ${done}/${total}`,
     importAction: 'Import meeting',
     importActionSub: 'Loads a backup exported from another computer',
     importOk: 'Meeting imported successfully!',
@@ -480,6 +491,21 @@ Rules:
 ${vocabulary}
 Transcript:
 ${transcript}`,
+    whatsappPrompt: (ata: string) =>
+      `You will receive the minutes of a meeting that are ALREADY DONE. Reformat that SAME CONTENT to
+paste into a WhatsApp chat — do not summarize further, do not add or remove any information.
+
+WhatsApp formatting rules (use exactly this style):
+- Bold: *one asterisk* on each side (NEVER **two**, that's markdown and doesn't work on WhatsApp).
+- Each section (e.g., Decisions, Pending items, Blockers, Critical items, Participation, Next
+  steps) becomes a *bold, UPPERCASE* title, with a relevant emoji before it (e.g., ✅ Decisions,
+  📌 Pending, 🚧 Blockers, 🔴 Critical, 🗣️ Participation, 👉 Next steps).
+- Lists use "• " at the start of each item (not "-", not "*", not markdown numbering).
+- Do not invent, do not summarize further, do not remove ANY information from the original — just reformat.
+- Reply ONLY with the final formatted text, no preamble, no comment, no explanation.
+
+Original minutes:
+${ata}`,
     vocabularyClause: (terms: string) =>
       `\nBUSINESS VOCABULARY — company names, products and acronyms used by the user. Automatic Google
 transcription often misspells these terms (e.g.: "acme corp" → "AcmeCorp"). When a word in the text

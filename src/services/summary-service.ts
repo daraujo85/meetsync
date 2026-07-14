@@ -178,3 +178,11 @@ export async function suggestMeetingTitle(
   if (!title || title.length > 80 || looksLikeBadAiTitle(title)) return undefined;
   return title;
 }
+
+/** Reformata uma ata JÁ GERADA para colar no WhatsApp (negrito com um asterisco, emojis por
+ *  seção, listas com "•") — usa só a ata como entrada, não relê a transcrição inteira. */
+export async function formatSummaryForWhatsappAi(summaryText: string, url: string, model: string): Promise<string> {
+  const prompt = t().ai.whatsappPrompt(summaryText);
+  const raw = await ollama.generate(url, model, prompt);
+  return raw.trim();
+}

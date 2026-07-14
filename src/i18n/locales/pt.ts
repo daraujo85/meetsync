@@ -74,6 +74,9 @@ export const pt = {
     rtHelp: 'Atualiza a ata automaticamente, via streaming do Ollama.',
     updateEvery: 'Atualizar a cada',
     min: 'min',
+    copyWhatsapp: 'Copiar para WhatsApp',
+    copyWhatsappBusy: 'Formatando…',
+    copyWhatsappDone: 'Copiado!',
   },
 
   captureStatus: {
@@ -295,6 +298,11 @@ export const pt = {
     dlAta: 'Baixar resumo / ata',
     dlAtaSubYes: 'Ata estruturada desta reunião',
     dlAtaSubNo: 'Esta reunião não tem ata gerada',
+    copyWhatsapp: 'Copiar para WhatsApp',
+    copyWhatsappSub: 'Copia a ata formatada (negrito, listas, emojis)',
+    copyWhatsappSubNo: 'Esta reunião não tem ata gerada',
+    copyWhatsappBusy: 'Formatando…',
+    copyWhatsappDone: 'Copiado!',
     del: 'Excluir do histórico',
     delSub: 'Apaga a transcrição deste dispositivo',
     meetingFallback: 'Reunião',
@@ -302,6 +310,9 @@ export const pt = {
     generateTitlesHint: (n: number) => `${n} ${n === 1 ? 'reunião sem título' : 'reuniões sem título'} — sugerir com IA?`,
     generatingTitles: (done: number, total: number) => `Gerando títulos… ${done}/${total}`,
     generatingTitleCard: 'Gerando título…',
+    generateAtas: 'Gerar atas com IA',
+    generateAtasHint: (n: number) => `${n} ${n === 1 ? 'reunião sem ata' : 'reuniões sem ata'} — gerar com IA?`,
+    generatingAtas: (done: number, total: number) => `Gerando atas… ${done}/${total}`,
     importAction: 'Importar reunião',
     importActionSub: 'Carrega um backup exportado de outro computador',
     importOk: 'Reunião importada com sucesso!',
@@ -486,6 +497,21 @@ Regras:
 ${vocabulary}
 Transcrição:
 ${transcript}`,
+    whatsappPrompt: (ata: string) =>
+      `Você receberá a ata de uma reunião JÁ PRONTA. Reformate ESSE MESMO CONTEÚDO para colar num
+chat do WhatsApp — sem resumir mais, sem adicionar nem remover nenhuma informação.
+
+Regras de formatação do WhatsApp (use exatamente este estilo):
+- Negrito: *um asterisco* de cada lado (NUNCA **dois**, isso é markdown, não funciona no WhatsApp).
+- Cada seção (ex.: Decisões, Pendências, Bloqueios, Itens críticos, Participação, Próximos passos)
+  vira um título em *negrito, MAIÚSCULO*, com um emoji relevante antes (ex.: ✅ Decisões, 📌
+  Pendências, 🚧 Bloqueios, 🔴 Itens críticos, 🗣️ Participação, 👉 Próximos passos).
+- Listas usam "• " no início de cada item (não use "-" nem "*" nem numeração markdown).
+- Não invente, não resuma mais, não remova NENHUMA informação da ata original — só reformate.
+- Responda APENAS com o texto final formatado, sem preâmbulo, sem comentário, sem explicação.
+
+Ata original:
+${ata}`,
     vocabularyClause: (terms: string) =>
       `\nVOCABULÁRIO DO NEGÓCIO — nomes de empresas, produtos e siglas do usuário. A transcrição automática
 do Google costuma escrever esses termos errado (ex.: "acme corp" → "AcmeCorp"). Quando uma palavra do

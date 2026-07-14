@@ -678,6 +678,7 @@ button {
   color: var(--ms-accent-blue);
   background: var(--ms-accent-blue-soft);
 }
+.ms-sum-copy-wa { display: inline-flex; margin-bottom: var(--ms-space-3); min-height: 30px; padding: 5px 12px; font-size: 12.5px; }
 .ms-sum-status.is-listening {
   color: var(--ms-text-secondary);
   background: var(--ms-bg-surface-elevated);

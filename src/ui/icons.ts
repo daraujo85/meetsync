@@ -60,4 +60,5 @@ export const icons = {
   // Export/import de reunião (backup portátil entre dispositivos).
   exportFile: stroke('<path d="M12 15V4M12 4l-3.5 3.5M12 4l3.5 3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>'),
   importFile: stroke('<path d="M12 4v11M12 15l-3.5-3.5M12 15l3.5-3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>'),
+  copy: stroke('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 01-2-2V5a2 2 0 012-2h8a2 2 0 012 2v1"/>'),
 };

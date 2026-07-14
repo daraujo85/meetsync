@@ -30,7 +30,8 @@ import {
   isGenericTitle,
   isGenericTitleText,
 } from '@/services/export-txt';
-import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, type ChatTurn } from '@/services/summary-service';
+import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, formatSummaryForWhatsappAi, type ChatTurn } from '@/services/summary-service';
+import { formatSummaryForWhatsapp } from '@/services/whatsapp-format';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -276,6 +277,8 @@ export class Panel {
   private lastAboutOpen = false;
   private histTitleBanner!: HTMLElement;
   private histBulkTitleBusy = false;
+  private histAtaBanner!: HTMLElement;
+  private histBulkAtaBusy = false;
   /** Card do histórico com um spinner + rótulo (ex.: "Gerando título…") — para acompanhar
    *  visualmente QUAL reunião está sendo processada durante uma operação em lote. */
   private histProcessingId: string | null = null;
@@ -311,6 +314,7 @@ export class Panel {
   private intervalPills!: HTMLElement;
   private summaryStatus!: HTMLElement;
   private summaryContent!: HTMLElement;
+  private copyWaBtn!: HTMLButtonElement;
   private renderedSummary = '';
 
   // alerts (menções) — modelo de regras do mockup
@@ -596,7 +600,38 @@ export class Panel {
 
     this.summaryStatus = el('div', { class: 'ms-sum-status ms-hidden' });
     this.summaryContent = el('div', { class: 'ms-summary' });
-    const scroll = el('div', { class: 'ms-tabpanel ms-scroll' }, [this.summaryStatus, this.summaryContent]);
+
+    const waIco = el('span', { class: 'ms-btn-ico', html: icons.copy });
+    const waLabel = el('span', { text: t().summaryTab.copyWhatsapp });
+    this.copyWaBtn = el('button', { class: 'ms-btn ms-btn-secondary ms-sum-copy-wa ms-hidden', type: 'button' }, [waIco, waLabel]) as HTMLButtonElement;
+    this.copyWaBtn.addEventListener('click', () => void (async () => {
+      const s = store.get();
+      if (!s.ui.summaryText || this.copyWaBtn.disabled) return;
+      this.copyWaBtn.disabled = true;
+      const prevLabel = waLabel.textContent ?? '';
+      const prevIco = waIco.innerHTML;
+      waLabel.textContent = t().summaryTab.copyWhatsappBusy;
+      waIco.innerHTML = '<span class="ms-spinner"></span>';
+      try {
+        let text: string;
+        try {
+          text = await formatSummaryForWhatsappAi(s.ui.summaryText, s.settings.ollamaUrl, s.settings.ollamaModel!);
+        } catch {
+          // Ollama indisponível/falhou — cai pro conversor determinístico (sem IA) em vez de nada.
+          text = formatSummaryForWhatsapp(s.session, s.ui.summaryText, t().exportFile.untitledMeeting);
+        }
+        await navigator.clipboard.writeText(text);
+        waLabel.textContent = t().summaryTab.copyWhatsappDone;
+      } finally {
+        window.setTimeout(() => {
+          this.copyWaBtn.disabled = false;
+          waLabel.textContent = prevLabel;
+          waIco.innerHTML = prevIco;
+        }, 1400);
+      }
+    })());
+
+    const scroll = el('div', { class: 'ms-tabpanel ms-scroll' }, [this.summaryStatus, this.copyWaBtn, this.summaryContent]);
 
     const wrap = el('div', { class: 'ms-tabwrap' }, [rtBar, scroll]);
     this.tabPanels.set('summary', wrap);
@@ -1226,6 +1261,7 @@ export class Panel {
     importBtn.addEventListener('click', () => this.histImportInput.click());
 
     this.histTitleBanner = el('div', { class: 'ms-hist-ai-banner ms-hidden' });
+    this.histAtaBanner = el('div', { class: 'ms-hist-ai-banner ms-hidden' });
     this.histImportStatus = el('div', { class: 'ms-hist-import-status ms-hidden' });
 
     this.histList = el('div', { class: 'ms-hist-list' });
@@ -1234,6 +1270,7 @@ export class Panel {
       el('div', { class: 'ms-hist-search ms-hist-search-row' }, [this.histSearch, importBtn, this.histImportInput]),
       el('div', { class: 'ms-hist-scroll ms-scroll' }, [
         this.histTitleBanner,
+        this.histAtaBanner,
         this.histImportStatus,
         this.histList,
         el('div', { class: 'ms-hist-privacy' }, [
@@ -1281,6 +1318,7 @@ export class Panel {
       el('span', { text: t().history.count(n) }),
     );
     this.renderHistTitleBanner();
+    this.renderHistAtaBanner();
     if (!list.length) {
       this.histList.replaceChildren(
         el('div', { class: 'ms-hist-empty' }, [
@@ -1531,6 +1569,43 @@ export class Panel {
     const dlAta = this.histAction(icons.doc, hi.dlAta, summaryText ? hi.dlAtaSubYes : hi.dlAtaSubNo, !summaryText, () => {
       if (summaryText) downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText));
     });
+    const copyWa = this.histAction(
+      icons.copy,
+      hi.copyWhatsapp,
+      summaryText ? hi.copyWhatsappSub : hi.copyWhatsappSubNo,
+      !summaryText,
+      () => void (async () => {
+        if (!summaryText) return;
+        const labelEl = copyWa.querySelector('.ms-hist-action-label');
+        const subEl = copyWa.querySelector('.ms-hist-action-sub');
+        const icoEl = copyWa.querySelector('.ms-hist-action-ico');
+        const prevLabel = labelEl?.textContent ?? '';
+        const prevSub = subEl?.textContent ?? '';
+        const prevIco = icoEl?.innerHTML ?? '';
+        copyWa.classList.add('is-disabled');
+        if (labelEl) labelEl.textContent = hi.copyWhatsappBusy;
+        if (icoEl) icoEl.innerHTML = '<span class="ms-spinner"></span>';
+        try {
+          const st = store.get().settings;
+          let text: string;
+          try {
+            text = await formatSummaryForWhatsappAi(summaryText, st.ollamaUrl, st.ollamaModel!);
+          } catch {
+            // Ollama falhou — cai pro conversor determinístico (sem IA) em vez de nada.
+            text = formatSummaryForWhatsapp(session, summaryText, t().exportFile.untitledMeeting);
+          }
+          await navigator.clipboard.writeText(text);
+          if (labelEl) labelEl.textContent = hi.copyWhatsappDone;
+        } finally {
+          window.setTimeout(() => {
+            copyWa.classList.remove('is-disabled');
+            if (labelEl) labelEl.textContent = prevLabel;
+            if (subEl) subEl.textContent = prevSub;
+            if (icoEl) icoEl.innerHTML = prevIco;
+          }, 1400);
+        }
+      })(),
+    );
     const exportBackup = this.histAction(icons.exportFile, hi.exportBackup, hi.exportBackupSub, false, () =>
       downloadText(buildFilename(session, '_backup', 'json'), buildMeetingBackup(m, saved)),
     );
@@ -1552,7 +1627,7 @@ export class Panel {
       this.sectionLabel(hi.actionsAi, icons.sparkles),
       el('div', { class: 'ms-hist-actions' }, [askAct, dlAi, genAta]),
       this.sectionLabel(hi.actionsExport, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, exportBackup]),
+      el('div', { class: 'ms-hist-actions' }, [dlTxt, dlAta, copyWa, exportBackup]),
       el('div', { class: 'ms-hist-actions' }, [del]),
     ]);
 
@@ -1622,6 +1697,8 @@ export class Panel {
       this.histTitleBanner.classList.remove('ms-hidden');
       return;
     }
+    // Some enquanto o outro lote (atas) estiver rodando — evita rodar os dois ao mesmo tempo.
+    if (this.histBulkAtaBusy) { this.histTitleBanner.classList.add('ms-hidden'); return; }
     const count = this.histMetas.filter((m) => this.needsTitle(m)).length;
     if (count === 0 || !this.ollamaReady(store.get())) {
       this.histTitleBanner.classList.add('ms-hidden');
@@ -1641,7 +1718,7 @@ export class Panel {
   /** Gera (via IA) um título para cada reunião com título genérico e PERSISTE no histórico
    *  (diferente do download com IA, que só sugere para o arquivo baixado). */
   private async runBulkTitleGeneration() {
-    if (this.histBulkTitleBusy) return;
+    if (this.histBulkTitleBusy || this.histBulkAtaBusy) return;
     const s = store.get();
     if (!this.ollamaReady(s)) return;
     const targets = this.histMetas.filter((m) => this.needsTitle(m));
@@ -1674,6 +1751,68 @@ export class Panel {
 
     this.histProcessingId = null;
     this.histBulkTitleBusy = false;
+    this.histMetas = await loadHistory();
+    this.renderHistoryList();
+  }
+
+  /** Mostra/esconde o banner "N reuniões sem ata — gerar com IA?" no topo da lista. */
+  private renderHistAtaBanner() {
+    const hi = t().history;
+    if (this.histBulkAtaBusy) {
+      this.histAtaBanner.classList.remove('ms-hidden');
+      return;
+    }
+    if (this.histBulkTitleBusy) { this.histAtaBanner.classList.add('ms-hidden'); return; }
+    const count = this.histMetas.filter((m) => !m.hasSummary).length;
+    if (count === 0 || !this.ollamaReady(store.get())) {
+      this.histAtaBanner.classList.add('ms-hidden');
+      return;
+    }
+    this.histAtaBanner.classList.remove('ms-hidden');
+    this.histAtaBanner.replaceChildren(
+      el('span', { class: 'ms-hist-ai-text', text: hi.generateAtasHint(count) }),
+      (() => {
+        const b = el('button', { class: 'ms-btn ms-btn-primary ms-hist-ai-btn', type: 'button', text: hi.generateAtas }) as HTMLButtonElement;
+        b.addEventListener('click', () => void this.runBulkAtaGeneration());
+        return b;
+      })(),
+    );
+  }
+
+  /** Gera (via IA) e PERSISTE a ata de cada reunião sem ata, uma de cada vez — mesmo padrão
+   *  visual da geração de títulos em lote (spinner no card atual). */
+  private async runBulkAtaGeneration() {
+    if (this.histBulkAtaBusy || this.histBulkTitleBusy) return;
+    const s = store.get();
+    if (!this.ollamaReady(s)) return;
+    const targets = this.histMetas.filter((m) => !m.hasSummary);
+    if (!targets.length) return;
+
+    this.histBulkAtaBusy = true;
+    let done = 0;
+    this.histAtaBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingAtas(done, targets.length) }));
+
+    for (const m of targets) {
+      this.histProcessingId = m.id;
+      this.histProcessingLabel = t().history.genAtaBusy;
+      this.renderHistoryList();
+      try {
+        const saved = await loadMeeting(m.id);
+        if (saved && saved.session.transcript.length > 0) {
+          const text = await summarizeMeeting(saved.session, s.settings.ollamaUrl, s.settings.ollamaModel!, s.settings.vocabulary);
+          await updateMeetingSummary(m.id, text);
+          m.hasSummary = true;
+        }
+      } catch {
+        /* segue pro próximo */
+      }
+      done++;
+      this.histAtaBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingAtas(done, targets.length) }));
+      this.renderHistoryList();
+    }
+
+    this.histProcessingId = null;
+    this.histBulkAtaBusy = false;
     this.histMetas = await loadHistory();
     this.renderHistoryList();
   }
@@ -1874,6 +2013,7 @@ export class Panel {
   }
 
   private renderSummaryContent(s: AppState) {
+    if (!this.copyWaBtn.disabled) this.copyWaBtn.classList.toggle('ms-hidden', !s.ui.summaryText || !!s.ui.summarizing);
     if (s.ui.summaryText) {
       const tag = s.ui.summarizing ? `${s.ui.summaryText} stream` : s.ui.summaryText;
       if (tag !== this.renderedSummary) {

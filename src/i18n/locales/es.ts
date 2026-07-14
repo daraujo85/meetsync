@@ -72,6 +72,9 @@ export const es: Messages = {
     rtHelp: 'Actualiza el acta automáticamente, mediante streaming de Ollama.',
     updateEvery: 'Actualizar cada',
     min: 'min',
+    copyWhatsapp: 'Copiar para WhatsApp',
+    copyWhatsappBusy: 'Formateando…',
+    copyWhatsappDone: '¡Copiado!',
   },
 
   captureStatus: {
@@ -292,6 +295,11 @@ export const es: Messages = {
     dlAta: 'Descargar resumen / acta',
     dlAtaSubYes: 'Acta estructurada de esta reunión',
     dlAtaSubNo: 'Esta reunión no tiene acta generada',
+    copyWhatsapp: 'Copiar para WhatsApp',
+    copyWhatsappSub: 'Copia el acta formateada (negrita, listas, emojis)',
+    copyWhatsappSubNo: 'Esta reunión no tiene acta generada',
+    copyWhatsappBusy: 'Formateando…',
+    copyWhatsappDone: '¡Copiado!',
     del: 'Eliminar del historial',
     delSub: 'Borra la transcripción de este dispositivo',
     meetingFallback: 'Reunión',
@@ -299,6 +307,9 @@ export const es: Messages = {
     generateTitlesHint: (n: number) => `${n} ${n === 1 ? 'reunión sin título' : 'reuniones sin título'} — ¿sugerir con IA?`,
     generatingTitles: (done: number, total: number) => `Generando títulos… ${done}/${total}`,
     generatingTitleCard: 'Generando título…',
+    generateAtas: 'Generar actas con IA',
+    generateAtasHint: (n: number) => `${n} ${n === 1 ? 'reunión sin acta' : 'reuniones sin acta'} — ¿generar con IA?`,
+    generatingAtas: (done: number, total: number) => `Generando actas… ${done}/${total}`,
     importAction: 'Importar reunión',
     importActionSub: 'Carga un backup exportado de otro computador',
     importOk: '¡Reunión importada con éxito!',
@@ -480,6 +491,21 @@ Reglas:
 ${vocabulary}
 Transcripción:
 ${transcript}`,
+    whatsappPrompt: (ata: string) =>
+      `Recibirás el acta de una reunión YA LISTA. Reformatea ESE MISMO CONTENIDO para pegar en un
+chat de WhatsApp — sin resumir más, sin agregar ni quitar ninguna información.
+
+Reglas de formato de WhatsApp (usa exactamente este estilo):
+- Negrita: *un asterisco* a cada lado (NUNCA **dos**, eso es markdown y no funciona en WhatsApp).
+- Cada sección (ej.: Decisiones, Pendientes, Bloqueos, Ítems críticos, Participación, Próximos
+  pasos) se convierte en un título en *negrita, MAYÚSCULA*, con un emoji relevante antes (ej.: ✅
+  Decisiones, 📌 Pendientes, 🚧 Bloqueos, 🔴 Críticos, 🗣️ Participación, 👉 Próximos pasos).
+- Las listas usan "• " al inicio de cada ítem (no uses "-" ni "*" ni numeración markdown).
+- No inventes, no resumas más, no quites NINGUNA información del acta original — solo reformatea.
+- Responde SOLO con el texto final formateado, sin preámbulo, sin comentario, sin explicación.
+
+Acta original:
+${ata}`,
     vocabularyClause: (terms: string) =>
       `\nVOCABULARIO DEL NEGOCIO — nombres de empresas, productos y siglas del usuario. La transcripción
 automática de Google suele escribir mal estos términos (ej.: "acme corp" → "AcmeCorp"). Cuando una
