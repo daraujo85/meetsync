@@ -1326,12 +1326,8 @@ export class Panel {
 
     const children: Node[] = [top];
     if (processingLabel) {
-      children.push(
-        el('div', { class: 'ms-hist-c-processing' }, [
-          el('span', { class: 'ms-spinner ms-spinner-sm' }),
-          el('span', { text: processingLabel }),
-        ]),
-      );
+      // Só um spinner por card (já tem um no lugar da data) — aqui é só o texto de status.
+      children.push(el('div', { class: 'ms-hist-c-processing' }, [el('span', { text: processingLabel })]));
     } else if (m.preview) {
       children.push(
         el('div', { class: 'ms-hist-c-preview' }, [
