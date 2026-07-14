@@ -301,6 +301,7 @@ export const pt = {
     generateTitles: 'Gerar títulos com IA',
     generateTitlesHint: (n: number) => `${n} ${n === 1 ? 'reunião sem título' : 'reuniões sem título'} — sugerir com IA?`,
     generatingTitles: (done: number, total: number) => `Gerando títulos… ${done}/${total}`,
+    generatingTitleCard: 'Gerando título…',
     importAction: 'Importar reunião',
     importActionSub: 'Carrega um backup exportado de outro computador',
     importOk: 'Reunião importada com sucesso!',
@@ -315,6 +316,7 @@ export const pt = {
 
   popup: {
     privacy: 'Privacidade',
+    about: 'Sobre',
     help: 'Ajuda',
     outsideMsg1Html: 'O MeetSync funciona <strong>no Google Meet e no Microsoft Teams</strong>.',
     outsideMsg2: 'Entre numa reunião para capturar as legendas, ver o chat e exportar a transcrição.',

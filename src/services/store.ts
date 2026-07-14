@@ -23,6 +23,8 @@ export type UiState = {
   review?: boolean;
   /** Sheet de histórico de reuniões aberto. */
   historyOpen?: boolean;
+  /** Sheet "Sobre" aberto (ex.: pedido pelo popup). */
+  aboutOpen?: boolean;
   /** texto do último resumo/ata gerado, para exibir na aba Resumo. */
   summaryText?: string;
   /** true enquanto um resumo está sendo gerado/recebido (streaming). */

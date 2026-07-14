@@ -298,6 +298,7 @@ export const es: Messages = {
     generateTitles: 'Generar títulos con IA',
     generateTitlesHint: (n: number) => `${n} ${n === 1 ? 'reunión sin título' : 'reuniones sin título'} — ¿sugerir con IA?`,
     generatingTitles: (done: number, total: number) => `Generando títulos… ${done}/${total}`,
+    generatingTitleCard: 'Generando título…',
     importAction: 'Importar reunión',
     importActionSub: 'Carga un backup exportado de otro computador',
     importOk: '¡Reunión importada con éxito!',
@@ -312,6 +313,7 @@ export const es: Messages = {
 
   popup: {
     privacy: 'Privacidad',
+    about: 'Acerca de',
     help: 'Ayuda',
     outsideMsg1Html: 'MeetSync funciona <strong>en Google Meet y Microsoft Teams</strong>.',
     outsideMsg2: 'Entra en una reunión para capturar los subtítulos, ver el chat y exportar la transcripción.',

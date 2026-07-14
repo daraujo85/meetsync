@@ -141,6 +141,13 @@ function wireToolbarBridge() {
       return true;
     }
 
+    if (msg.type === 'meetsync:open-about') {
+      // Abre o "Sobre" mesmo fora de uma reunião (ex.: pedido pelo popup).
+      store.patchUi({ review: true, expanded: true, aboutOpen: true });
+      sendResponse({ ok: true });
+      return true;
+    }
+
     return undefined;
   });
 

@@ -298,6 +298,7 @@ export const en: Messages = {
     generateTitles: 'Generate titles with AI',
     generateTitlesHint: (n: number) => `${n} untitled ${n === 1 ? 'meeting' : 'meetings'} — suggest with AI?`,
     generatingTitles: (done: number, total: number) => `Generating titles… ${done}/${total}`,
+    generatingTitleCard: 'Generating title…',
     importAction: 'Import meeting',
     importActionSub: 'Loads a backup exported from another computer',
     importOk: 'Meeting imported successfully!',
@@ -312,6 +313,7 @@ export const en: Messages = {
 
   popup: {
     privacy: 'Privacy',
+    about: 'About',
     help: 'Help',
     outsideMsg1Html: 'MeetSync works <strong>on Google Meet and Microsoft Teams</strong>.',
     outsideMsg2: 'Join a meeting to capture captions, see the chat and export the transcript.',

@@ -273,8 +273,13 @@ export class Panel {
   private histMetas: HistoryMeta[] = [];
   private histQuery = '';
   private lastHistoryOpen = false;
+  private lastAboutOpen = false;
   private histTitleBanner!: HTMLElement;
   private histBulkTitleBusy = false;
+  /** Card do histórico com um spinner + rótulo (ex.: "Gerando título…") — para acompanhar
+   *  visualmente QUAL reunião está sendo processada durante uma operação em lote. */
+  private histProcessingId: string | null = null;
+  private histProcessingLabel = '';
   private histImportInput!: HTMLInputElement;
   private histImportStatus!: HTMLElement;
   // modal de confirmação genérico (ex.: excluir reunião)
@@ -423,6 +428,7 @@ export class Panel {
     this.lastDotKind = '';
     this.lastOvKey = '';
     this.lastHistoryOpen = false;
+    this.lastAboutOpen = false;
     this.renderedSummary = '';
     this.rtKey = '';
     this.alertsTabBadge = null;
@@ -1078,7 +1084,11 @@ export class Panel {
         el('div', { class: 'ms-about-priv', text: ab.privacy }),
       ]),
     ]);
-    back.addEventListener('click', () => sheet.classList.add('ms-hidden'));
+    back.addEventListener('click', () => {
+      sheet.classList.add('ms-hidden');
+      this.lastAboutOpen = false;
+      if (store.get().ui.aboutOpen) store.patchUi({ aboutOpen: false });
+    });
     return sheet;
   }
 
@@ -1190,6 +1200,8 @@ export class Panel {
     const hi = t().history;
     const back = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: t().header.back, 'aria-label': t().header.back, html: icons.chevronLeft });
     back.addEventListener('click', () => this.closeHistory());
+    const aboutBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: t().header.about, 'aria-label': t().header.aboutAria, html: icons.info });
+    aboutBtn.addEventListener('click', () => this.aboutSheet.classList.remove('ms-hidden'));
     this.histCount = el('span', { class: 'ms-hist-count' });
     this.histSearch = el('input', { class: 'ms-input', type: 'text', placeholder: hi.searchPlaceholder, 'aria-label': hi.searchAria }) as HTMLInputElement;
     this.histSearch.addEventListener('input', () => { this.histQuery = this.histSearch.value; this.renderHistoryList(); });
@@ -1204,7 +1216,7 @@ export class Panel {
 
     this.histList = el('div', { class: 'ms-hist-list' });
     this.histListView = el('div', { class: 'ms-hist-view' }, [
-      el('div', { class: 'ms-hist-head' }, [back, el('span', { class: 'ms-hist-title', text: hi.title }), this.histCount]),
+      el('div', { class: 'ms-hist-head' }, [back, el('span', { class: 'ms-hist-title', text: hi.title }), this.histCount, aboutBtn]),
       el('div', { class: 'ms-hist-search ms-hist-search-row' }, [this.histSearch, importBtn, this.histImportInput]),
       el('div', { class: 'ms-hist-scroll ms-scroll' }, [
         this.histTitleBanner,
@@ -1263,16 +1275,18 @@ export class Panel {
       );
       return;
     }
-    this.histList.replaceChildren(...list.map((m) => this.historyCard(m)));
+    this.histList.replaceChildren(...list.map((m) => this.historyCard(m, m.id === this.histProcessingId ? this.histProcessingLabel : undefined)));
   }
 
-  private historyCard(m: HistoryMeta): HTMLElement {
+  private historyCard(m: HistoryMeta, processingLabel?: string): HTMLElement {
     const when = m.startISO ?? m.savedAt;
     const d = new Date(when);
-    const dateTile = el('div', { class: 'ms-hist-tile' }, [
-      el('span', { class: 'ms-hist-tile-day', text: isNaN(d.getTime()) ? '–' : String(d.getDate()) }),
-      el('span', { class: 'ms-hist-tile-mon', text: isNaN(d.getTime()) ? '' : monthAbbr(d) }),
-    ]);
+    const dateTile = processingLabel
+      ? el('div', { class: 'ms-hist-tile ms-hist-tile-busy' }, [el('span', { class: 'ms-spinner' })])
+      : el('div', { class: 'ms-hist-tile' }, [
+          el('span', { class: 'ms-hist-tile-day', text: isNaN(d.getTime()) ? '–' : String(d.getDate()) }),
+          el('span', { class: 'ms-hist-tile-mon', text: isNaN(d.getTime()) ? '' : monthAbbr(d) }),
+        ]);
 
     const isTeams = m.provider === 'microsoft-teams';
     const provIcon = isTeams ? icons.provTeams : icons.provMeet;
@@ -1296,7 +1310,14 @@ export class Panel {
     ]);
 
     const children: Node[] = [top];
-    if (m.preview) {
+    if (processingLabel) {
+      children.push(
+        el('div', { class: 'ms-hist-c-processing' }, [
+          el('span', { class: 'ms-spinner ms-spinner-sm' }),
+          el('span', { text: processingLabel }),
+        ]),
+      );
+    } else if (m.preview) {
       children.push(
         el('div', { class: 'ms-hist-c-preview' }, [
           el('span', { class: 'ms-hist-c-pwho', text: `${m.preview.who.split(' ')[0]}:` }),
@@ -1314,8 +1335,8 @@ export class Panel {
       ]),
     );
 
-    const card = el('button', { class: 'ms-hist-card', type: 'button' }, children);
-    card.addEventListener('click', () => void this.openDetail(m));
+    const card = el('button', { class: 'ms-hist-card' + (processingLabel ? ' is-processing' : ''), type: 'button', ...(processingLabel ? { disabled: true } : {}) }, children);
+    if (!processingLabel) card.addEventListener('click', () => void this.openDetail(m));
     return card;
   }
 
@@ -1586,6 +1607,9 @@ export class Panel {
     this.histTitleBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingTitles(done, targets.length) }));
 
     for (const m of targets) {
+      this.histProcessingId = m.id;
+      this.histProcessingLabel = t().history.generatingTitleCard;
+      this.renderHistoryList(); // mostra o spinner NESTE card antes de começar a chamada à IA
       try {
         const saved = await loadMeeting(m.id);
         if (saved && saved.session.transcript.length > 0) {
@@ -1603,6 +1627,7 @@ export class Panel {
       this.renderHistoryList();
     }
 
+    this.histProcessingId = null;
     this.histBulkTitleBusy = false;
     this.histMetas = await loadHistory();
     this.renderHistoryList();
@@ -1646,6 +1671,13 @@ export class Panel {
       this.lastHistoryOpen = !!s.ui.historyOpen;
       if (s.ui.historyOpen) this.openHistory();
       else this.historySheet.classList.add('ms-hidden');
+    }
+
+    // Sheet "Sobre" (abre por mensagem do popup — o botão do header já abre direto, sem passar
+    // pelo store; aqui só cobre o gatilho externo).
+    if (!!s.ui.aboutOpen !== this.lastAboutOpen) {
+      this.lastAboutOpen = !!s.ui.aboutOpen;
+      if (s.ui.aboutOpen) this.aboutSheet.classList.remove('ms-hidden');
     }
 
     this.ccBtn.classList.toggle('is-active', s.captionsOn);

@@ -74,6 +74,11 @@ function header(): HTMLElement {
 function footer(): HTMLElement {
   const version = chrome.runtime.getManifest().version;
   const priv = el('a', { href: PRIVACY_URL, target: '_blank', rel: 'noopener noreferrer', text: t().popup.privacy });
+  const about = el('a', { href: '#', text: t().popup.about });
+  about.addEventListener('click', (e) => {
+    e.preventDefault();
+    void openAboutPanel();
+  });
   const help = el('a', { href: '#', text: t().popup.help });
   help.addEventListener('click', (e) => {
     e.preventDefault();
@@ -83,9 +88,38 @@ function footer(): HTMLElement {
   return el('div', { class: 'ms-pop-foot' }, [
     priv,
     el('span', { class: 'ms-foot-sep', text: '·' }),
+    about,
+    el('span', { class: 'ms-foot-sep', text: '·' }),
     help,
     el('span', { class: 'ms-foot-ver', text: `v${version}` }),
   ]);
+}
+
+/** Abre o "Sobre" na aba de reunião ativa (ou na mais recente encontrada); sem nenhuma aba
+ *  suportada aberta, cai para a página de boas-vindas (conteúdo equivalente). */
+async function openAboutPanel() {
+  if (activeIsSupported && activeTabId !== undefined) {
+    const tabId = activeTabId;
+    chrome.tabs.sendMessage(tabId, { type: 'meetsync:open-about' }, () => {
+      if (chrome.runtime.lastError) void chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PATH) });
+      window.close();
+    });
+    return;
+  }
+  try {
+    const tabs = await chrome.tabs.query({ url: SUPPORTED_TAB_GLOBS });
+    const tab = tabs.find((t) => t.id !== undefined);
+    if (tab?.id !== undefined) {
+      await chrome.tabs.update(tab.id, { active: true });
+      if (tab.windowId !== undefined) await chrome.windows.update(tab.windowId, { focused: true });
+      chrome.tabs.sendMessage(tab.id, { type: 'meetsync:open-about' }, () => void chrome.runtime.lastError);
+    } else {
+      await chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PATH) });
+    }
+  } catch {
+    void chrome.tabs.create({ url: chrome.runtime.getURL(WELCOME_PATH) });
+  }
+  window.close();
 }
 
 let history: HistoryMeta[] = [];
