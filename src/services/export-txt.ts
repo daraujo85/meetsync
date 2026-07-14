@@ -29,6 +29,18 @@ export function isGenericTitle(session: MeetingSession): boolean {
   return isGenericTitleText(session.meetingTitle || '', session.meetingCode);
 }
 
+// Prefixo fixo dos 3 formatos de buildFallbackTitle ("Reunião com X"/"... e Y"/"..., Y e mais N"),
+// nos 3 idiomas — usado só pra RECONHECER um título de fallback já salvo (ver isFallbackTitleText).
+const FALLBACK_TITLE_RE = /^(reuni(ã|a)o com |meeting with |reuni[oó]n con )/i;
+
+/** O título já salvo veio do fallback determinístico (buildFallbackTitle), não de uma sugestão
+ *  real da IA? Tratado como "ainda precisa de título" pra geração em lote poder re-tentar essas
+ *  reuniões mais tarde (ex.: depois de uma melhoria no prompt/parsing da sugestão por IA) — sem
+ *  isso, uma vez caído no fallback, a reunião nunca mais aparece no banner "sem título". */
+export function isFallbackTitleText(title: string): boolean {
+  return FALLBACK_TITLE_RE.test((title || '').trim());
+}
+
 /** Título determinístico a partir dos participantes — usado quando a IA se recusa a sugerir um
  *  título (transcrição curta/pouco clara) durante a geração em LOTE. Sem isso, essas reuniões
  *  ficam com o título genérico pra sempre (a recusa nunca vira um título válido) e o banner "N

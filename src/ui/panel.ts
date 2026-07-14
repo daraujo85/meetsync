@@ -29,6 +29,7 @@ import {
   formatTime,
   isGenericTitle,
   isGenericTitleText,
+  isFallbackTitleText,
   buildFallbackTitle,
 } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, formatSummaryForWhatsappAi, type ChatTurn } from '@/services/summary-service';
@@ -1721,7 +1722,7 @@ export class Panel {
   /** Sem título de verdade — padrão da plataforma OU título corrompido por uma recusa de IA
    *  numa rodada anterior (ex.: "A reunião não contém informações suficientes..."). */
   private needsTitle(m: HistoryMeta): boolean {
-    return isGenericTitleText(m.title, m.meetingCode) || looksLikeBadAiTitle(m.title);
+    return isGenericTitleText(m.title, m.meetingCode) || looksLikeBadAiTitle(m.title) || isFallbackTitleText(m.title);
   }
 
   /** Mostra/esconde o banner "N reuniões sem título — sugerir com IA?" no topo da lista. */
