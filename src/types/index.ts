@@ -37,6 +37,11 @@ export function isEventSource(source: TranscriptEntry['source']): boolean {
   return source.endsWith('-event');
 }
 
+/** É fala capturada por legenda (não chat, não evento)? Usado nas estatísticas de participação. */
+export function isSpeechSource(source: TranscriptEntry['source']): boolean {
+  return source.endsWith('-caption');
+}
+
 /** Classifica a entrada para export/JSON. */
 export function entryKind(source: TranscriptEntry['source']): 'speech' | 'chat' | 'event' {
   if (isChatSource(source)) return 'chat';

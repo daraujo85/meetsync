@@ -179,6 +179,24 @@ export async function loadMeeting(id: string): Promise<SavedMeeting | null> {
   }
 }
 
+/** Acha a reunião anterior mais recente na MESMA sala (mesmo meetingCode) que já tem ata salva —
+ *  usada para dar continuidade à ata nova (o que foi resolvido / continua pendente desde então).
+ *  Sem meetingCode (não identificado) não há como saber que é "a mesma sala" — retorna null. */
+export async function findPreviousMeetingSummary(session: MeetingSession): Promise<{ summaryText: string; whenISO?: string } | null> {
+  if (!session.meetingCode) return null;
+  const index = await loadHistory();
+  const curWhen = session.captureStartedAt;
+  const candidates = index
+    .filter((m) => m.id !== session.id && m.hasSummary && m.meetingCode === session.meetingCode)
+    .sort((a, b) => (b.startISO ?? b.savedAt).localeCompare(a.startISO ?? a.savedAt));
+  const prev = curWhen ? candidates.find((m) => (m.startISO ?? m.savedAt) < curWhen) : candidates[0];
+  const chosen = prev ?? candidates[0];
+  if (!chosen) return null;
+  const saved = await loadMeeting(chosen.id);
+  if (!saved?.summaryText) return null;
+  return { summaryText: saved.summaryText, whenISO: chosen.startISO ?? chosen.savedAt };
+}
+
 /** Renomeia uma reunião do histórico (índice + dados completos) — usado ao aplicar um título
  *  sugerido por IA em lote. Diferente do download com IA, aqui o título É persistido. */
 export async function renameMeeting(id: string, title: string): Promise<void> {

@@ -420,20 +420,22 @@ IMPORTANTE — formato da resposta:
 
 Transcrição:
 ${transcript}`,
-    summaryPrompt: (vocabulary: string, metadata: string, transcript: string) =>
+    summaryPrompt: (vocabulary: string, metadata: string, transcript: string, stats: string, previous: string) =>
       `Você receberá a transcrição de uma reunião.
-Gere uma ata objetiva em português do Brasil.
+Gere uma ata objetiva e GERENCIAL em português do Brasil, cobrindo estas seções NESTA ORDEM:
 
-Inclua:
 1. Principais assuntos discutidos.
 2. Decisões identificadas.
 3. Responsáveis mencionados.
-4. Próximos passos.
-5. Pontos de atenção.
+4. Pendências (o que ficou em aberto), organizadas POR RESPONSÁVEL — formato "Nome: item pendente".
+5. Bloqueios: para cada um, cite o item bloqueado, o MOTIVO do bloqueio e quem é o responsável por resolver.
+6. Itens críticos: os que parecerem mais urgentes/prioritários, com o nível (Alta/Média/Baixa) e o porquê.
+7. Próximos passos.
+${previous ? '8. Continuidade com a reunião anterior: o que foi RESOLVIDO desde então, o que CONTINUA pendente, e o que está EM ANDAMENTO (compare com a "Ata da reunião anterior" abaixo).\n9. Participação: uma linha por pessoa com a contagem de falas/palavras (dado exato abaixo — NÃO recalcule, apenas organize).\n10. Pontos de atenção.' : '8. Participação: uma linha por pessoa com a contagem de falas/palavras (dado exato abaixo — NÃO recalcule, apenas organize).\n9. Pontos de atenção.'}
 
 Regras:
-- Não invente decisões.
-- Não invente responsáveis.
+- Não invente decisões, responsáveis, pendências, bloqueios nem criticidade — baseie-se SOMENTE na transcrição.
+- Se uma seção não tiver conteúdo (ex.: nenhum bloqueio identificado), escreva "Nenhum" nessa seção — não pule nem invente algo.
 - Os participantes são EXATAMENTE os listados em "Participantes" nos dados abaixo (todos falaram). Liste TODOS na ata — não omita nem rebaixe ninguém a "mencionado" por ter falado menos.
 - Quando algo não estiver claro, escreva "não identificado na transcrição".
 - Seja direto, profissional e útil.
@@ -441,6 +443,9 @@ Regras:
 Dados da reunião:
 ${metadata}
 ${vocabulary}
+Estatísticas de participação (dado exato — use na seção de Participação, não recalcule):
+${stats}
+${previous ? `\nAta da reunião anterior (mesma sala — use para a seção de Continuidade):\n${previous}\n` : ''}
 Transcrição:
 ${transcript}`,
     askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>

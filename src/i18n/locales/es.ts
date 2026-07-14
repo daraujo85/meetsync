@@ -414,20 +414,22 @@ IMPORTANTE — formato de la respuesta:
 
 Transcripción:
 ${transcript}`,
-    summaryPrompt: (vocabulary: string, metadata: string, transcript: string) =>
+    summaryPrompt: (vocabulary: string, metadata: string, transcript: string, stats: string, previous: string) =>
       `Recibirás la transcripción de una reunión.
-Genera un acta objetiva en español.
+Genera un acta objetiva y GERENCIAL en español, cubriendo estas secciones EN ESTE ORDEN:
 
-Incluye:
 1. Principales temas tratados.
 2. Decisiones identificadas.
 3. Responsables mencionados.
-4. Próximos pasos.
-5. Puntos de atención.
+4. Pendientes (lo que quedó abierto), organizados POR RESPONSABLE — formato "Nombre: pendiente".
+5. Bloqueos: para cada uno, indica el ítem bloqueado, el MOTIVO del bloqueo y quién es responsable de resolverlo.
+6. Ítems críticos: los que parezcan más urgentes/prioritarios, con el nivel (Alta/Media/Baja) y por qué.
+7. Próximos pasos.
+${previous ? '8. Continuidad con la reunión anterior: qué se RESOLVIÓ desde entonces, qué SIGUE pendiente, y qué está EN CURSO (compara con el "Acta de la reunión anterior" abajo).\n9. Participación: una línea por persona con el conteo de intervenciones/palabras (dato exacto abajo — NO recalcules, solo organízalo).\n10. Puntos de atención.' : '8. Participación: una línea por persona con el conteo de intervenciones/palabras (dato exacto abajo — NO recalcules, solo organízalo).\n9. Puntos de atención.'}
 
 Reglas:
-- No inventes decisiones.
-- No inventes responsables.
+- No inventes decisiones, responsables, pendientes, bloqueos ni criticidad — básate SOLO en la transcripción.
+- Si una sección no tiene contenido (ej.: ningún bloqueo identificado), escribe "Ninguno" en esa sección — no la omitas ni inventes algo.
 - Los participantes son EXACTAMENTE los listados en "Participantes" en los datos de abajo (todos hablaron). Enuméralos a TODOS en el acta — no omitas a nadie ni lo degrades a "mencionado" por hablar menos.
 - Cuando algo no esté claro, escribe "no identificado en la transcripción".
 - Sé directo, profesional y útil.
@@ -435,6 +437,9 @@ Reglas:
 Datos de la reunión:
 ${metadata}
 ${vocabulary}
+Estadísticas de participación (dato exacto — úsalo en la sección de Participación, no recalcules):
+${stats}
+${previous ? `\nActa de la reunión anterior (misma sala — úsala para la sección de Continuidad):\n${previous}\n` : ''}
 Transcripción:
 ${transcript}`,
     askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>

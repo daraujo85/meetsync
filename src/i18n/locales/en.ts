@@ -414,20 +414,22 @@ IMPORTANT — response format:
 
 Transcript:
 ${transcript}`,
-    summaryPrompt: (vocabulary: string, metadata: string, transcript: string) =>
+    summaryPrompt: (vocabulary: string, metadata: string, transcript: string, stats: string, previous: string) =>
       `You will receive the transcript of a meeting.
-Generate concise minutes in English.
+Generate objective, MANAGERIAL minutes in English, covering these sections IN THIS ORDER:
 
-Include:
 1. Main topics discussed.
 2. Decisions identified.
 3. Owners mentioned.
-4. Next steps.
-5. Points of attention.
+4. Pending items (what's still open), organized BY OWNER — format "Name: pending item".
+5. Blockers: for each one, cite the blocked item, the REASON for the block, and who owns resolving it.
+6. Critical items: the ones that look most urgent/important, with a level (High/Medium/Low) and why.
+7. Next steps.
+${previous ? '8. Continuity with the previous meeting: what was RESOLVED since then, what is STILL pending, and what is IN PROGRESS (compare with the "Previous meeting minutes" below).\n9. Participation: one line per person with speech/word counts (exact data below — do NOT recalculate, just organize it).\n10. Points of attention.' : '8. Participation: one line per person with speech/word counts (exact data below — do NOT recalculate, just organize it).\n9. Points of attention.'}
 
 Rules:
-- Do not invent decisions.
-- Do not invent owners.
+- Do not invent decisions, owners, pending items, blockers or criticality — rely ONLY on the transcript.
+- If a section has no content (e.g., no blockers identified), write "None" for that section — do not skip or invent something.
 - The participants are EXACTLY those listed under "Participants" in the data below (they all spoke). List ALL of them in the minutes — do not omit anyone or demote them to "mentioned" for speaking less.
 - When something is unclear, write "not identified in the transcript".
 - Be direct, professional and useful.
@@ -435,6 +437,9 @@ Rules:
 Meeting data:
 ${metadata}
 ${vocabulary}
+Participation statistics (exact data — use in the Participation section, do not recalculate):
+${stats}
+${previous ? `\nPrevious meeting minutes (same room — use for the Continuity section):\n${previous}\n` : ''}
 Transcript:
 ${transcript}`,
     askPrompt: (vocabulary: string, metadata: string, transcript: string, conversation: string, question: string) =>

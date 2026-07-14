@@ -1,9 +1,10 @@
 // Correção e resumo/ata via Ollama (§16/§17). Só roda sob ação explícita do usuário
 // (download/processar) e com Ollama configurado (RF-082/084, RF-091/092, RNF-009).
 
-import type { MeetingSession } from '@/types';
+import { isSpeechSource, type MeetingSession } from '@/types';
 import { ollama } from './ollama-client';
 import { buildTranscriptBody, formatTime } from './export-txt';
+import { findPreviousMeetingSummary } from './storage-service';
 import { t } from '@/i18n';
 
 function formatDate(iso?: string): string {
@@ -47,6 +48,25 @@ function countTimestamps(text: string): number {
   return (text.match(/\[\d{1,2}:\d{2}\]/g) ?? []).length;
 }
 
+/** Estatísticas de participação (falas/palavras por pessoa), calculadas direto da transcrição —
+ *  não pedimos pra IA contar (LLM erra contagem); só pedimos pra organizar esse dado exato na
+ *  ata. Considera só falas capturadas por legenda (ignora chat e eventos de reação/mão). */
+function participationStats(session: MeetingSession): string {
+  const byPerson = new Map<string, { lines: number; words: number }>();
+  for (const e of session.transcript) {
+    if (!isSpeechSource(e.source)) continue;
+    const cur = byPerson.get(e.participantName) ?? { lines: 0, words: 0 };
+    cur.lines += 1;
+    cur.words += e.text.trim().split(/\s+/).filter(Boolean).length;
+    byPerson.set(e.participantName, cur);
+  }
+  if (!byPerson.size) return '—';
+  return [...byPerson.entries()]
+    .sort((a, b) => b[1].words - a[1].words)
+    .map(([name, v]) => `${name}: ${v.words} palavras (${v.lines} falas)`)
+    .join('\n');
+}
+
 /** Corrige a transcrição. Retorna o texto corrigido (RF-085/086).
  *
  * Modelos pequenos (ex.: llama3.2:3b) às vezes ignoram a instrução "apenas corrija"
@@ -71,8 +91,18 @@ export async function correctTranscript(
   return corrected;
 }
 
-function summaryPrompt(session: MeetingSession, vocabulary?: string[]): string {
-  return t().ai.summaryPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session));
+/** Monta o prompt da ata: injeta estatísticas de participação (exatas) e, se houver, a ata da
+ *  reunião anterior na mesma sala (continuidade — resolvido/pendente/em andamento). */
+async function summaryPrompt(session: MeetingSession, vocabulary?: string[]): Promise<string> {
+  const stats = participationStats(session);
+  let previous = '';
+  try {
+    const prev = await findPreviousMeetingSummary(session);
+    if (prev) previous = prev.whenISO ? `(${formatDate(prev.whenISO)})\n${prev.summaryText}` : prev.summaryText;
+  } catch {
+    /* segue sem continuidade */
+  }
+  return t().ai.summaryPrompt(vocabularyClause(vocabulary), meetingMetadata(session), buildTranscriptBody(session), stats, previous);
 }
 
 /** Gera resumo/ata (RF-095..099). */
@@ -82,7 +112,7 @@ export async function summarizeMeeting(
   model: string,
   vocabulary?: string[],
 ): Promise<string> {
-  return ollama.generate(url, model, summaryPrompt(session, vocabulary));
+  return ollama.generate(url, model, await summaryPrompt(session, vocabulary));
 }
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
@@ -111,7 +141,7 @@ export async function summarizeMeetingStream(
   onChunk: (accumulated: string) => void,
   vocabulary?: string[],
 ): Promise<string> {
-  return ollama.generateStream(url, model, summaryPrompt(session, vocabulary), onChunk);
+  return ollama.generateStream(url, model, await summaryPrompt(session, vocabulary), onChunk);
 }
 
 /** Sugere um título curto para a reunião a partir do assunto da transcrição — usado só quando o
