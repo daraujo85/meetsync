@@ -12,6 +12,9 @@ import {
   loadMeeting,
   deleteMeeting,
   setMeetingStarred,
+  renameMeeting,
+  buildMeetingBackup,
+  importMeetingBackup,
   type HistoryMeta,
 } from '@/services/storage-service';
 import {
@@ -24,6 +27,7 @@ import {
   downloadText,
   formatTime,
   isGenericTitle,
+  isGenericTitleText,
 } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, type ChatTurn } from '@/services/summary-service';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
@@ -268,6 +272,17 @@ export class Panel {
   private histMetas: HistoryMeta[] = [];
   private histQuery = '';
   private lastHistoryOpen = false;
+  private histTitleBanner!: HTMLElement;
+  private histBulkTitleBusy = false;
+  private histImportInput!: HTMLInputElement;
+  private histImportStatus!: HTMLElement;
+  // modal de confirmação genérico (ex.: excluir reunião)
+  private confirmModal!: HTMLElement;
+  private confirmTitleEl!: HTMLElement;
+  private confirmMsgEl!: HTMLElement;
+  private confirmYesBtn!: HTMLButtonElement;
+  private confirmNoBtn!: HTMLButtonElement;
+  private confirmResolve: ((v: boolean) => void) | null = null;
 
   private stripStatus!: HTMLElement;
   private captionsToggle!: ReturnType<typeof makeToggle>;
@@ -466,7 +481,8 @@ export class Panel {
     this.aboutSheet = this.buildAbout();
     this.historySheet = this.buildHistorySheet();
     this.askSheet = this.buildAskSheet();
-    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet, this.historySheet, this.askSheet]);
+    this.confirmModal = this.buildConfirmModal();
+    this.panel = el('div', { class: 'ms-panel ms-hidden' }, [header, strip, tabs, body, this.buildFooter(), this.aboutSheet, this.historySheet, this.askSheet, this.confirmModal]);
     return this.panel;
   }
 
@@ -1176,11 +1192,22 @@ export class Panel {
     this.histCount = el('span', { class: 'ms-hist-count' });
     this.histSearch = el('input', { class: 'ms-input', type: 'text', placeholder: hi.searchPlaceholder, 'aria-label': hi.searchAria }) as HTMLInputElement;
     this.histSearch.addEventListener('input', () => { this.histQuery = this.histSearch.value; this.renderHistoryList(); });
+
+    this.histImportInput = el('input', { type: 'file', accept: '.json,application/json', class: 'ms-hidden' }) as HTMLInputElement;
+    this.histImportInput.addEventListener('change', () => void this.handleImportFile());
+    const importBtn = el('button', { class: 'ms-icon-btn ms-icon-btn-sm', type: 'button', title: hi.importAction, 'aria-label': hi.importAction, html: icons.importFile });
+    importBtn.addEventListener('click', () => this.histImportInput.click());
+
+    this.histTitleBanner = el('div', { class: 'ms-hist-ai-banner ms-hidden' });
+    this.histImportStatus = el('div', { class: 'ms-hist-import-status ms-hidden' });
+
     this.histList = el('div', { class: 'ms-hist-list' });
     this.histListView = el('div', { class: 'ms-hist-view' }, [
       el('div', { class: 'ms-hist-head' }, [back, el('span', { class: 'ms-hist-title', text: hi.title }), this.histCount]),
-      el('div', { class: 'ms-hist-search' }, [this.histSearch]),
+      el('div', { class: 'ms-hist-search ms-hist-search-row' }, [this.histSearch, importBtn, this.histImportInput]),
       el('div', { class: 'ms-hist-scroll ms-scroll' }, [
+        this.histTitleBanner,
+        this.histImportStatus,
         this.histList,
         el('div', { class: 'ms-hist-privacy' }, [
           el('span', { class: 'ms-note-ico', html: icons.lock }),
@@ -1225,6 +1252,7 @@ export class Panel {
       el('span', { class: 'ms-hist-count-ico', html: icons.history }),
       el('span', { text: t().history.count(n) }),
     );
+    this.renderHistTitleBanner();
     if (!list.length) {
       this.histList.replaceChildren(
         el('div', { class: 'ms-hist-empty' }, [
@@ -1397,7 +1425,12 @@ export class Panel {
     const dlAta = this.histAction(icons.doc, hi.dlAta, summaryText ? hi.dlAtaSubYes : hi.dlAtaSubNo, !summaryText, () => {
       if (summaryText) downloadText(buildFilename(session, t().exportFile.filenameSummarySuffix), buildSummaryTxt(session, summaryText));
     });
+    const exportBackup = this.histAction(icons.exportFile, hi.exportBackup, hi.exportBackupSub, false, () =>
+      downloadText(buildFilename(session, '_backup', 'json'), buildMeetingBackup(m, saved)),
+    );
     const del = this.histAction(icons.trash, hi.del, hi.delSub, false, () => void (async () => {
+      const ok = await this.confirmDialog(hi.deleteConfirmTitle, hi.deleteConfirmMsg, hi.deleteConfirmYes, hi.deleteConfirmNo);
+      if (!ok) return;
       await deleteMeeting(m.id);
       this.histDetailView.classList.add('ms-hidden');
       this.histListView.classList.remove('ms-hidden');
@@ -1411,7 +1444,7 @@ export class Panel {
       seg,
       previewBox,
       this.sectionLabel(hi.actions, icons.download),
-      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, dlAta, del]),
+      el('div', { class: 'ms-hist-actions' }, [askAct, dlTxt, dlAi, dlAta, exportBackup, del]),
     ]);
 
     renderPreview();
@@ -1430,6 +1463,128 @@ export class Panel {
     return row;
   }
 
+  // ================= Modal de confirmação genérico (ex.: excluir reunião) =================
+  private buildConfirmModal(): HTMLElement {
+    this.confirmTitleEl = el('div', { class: 'ms-confirm-title' });
+    this.confirmMsgEl = el('div', { class: 'ms-confirm-msg' });
+    this.confirmYesBtn = el('button', { class: 'ms-btn ms-btn-danger', type: 'button' }) as HTMLButtonElement;
+    this.confirmNoBtn = el('button', { class: 'ms-btn ms-btn-secondary', type: 'button' }) as HTMLButtonElement;
+    this.confirmYesBtn.addEventListener('click', () => this.resolveConfirm(true));
+    this.confirmNoBtn.addEventListener('click', () => this.resolveConfirm(false));
+    const card = el('div', { class: 'ms-confirm-card' }, [
+      this.confirmTitleEl,
+      this.confirmMsgEl,
+      el('div', { class: 'ms-confirm-actions' }, [this.confirmNoBtn, this.confirmYesBtn]),
+    ]);
+    const overlay = el('div', { class: 'ms-confirm-overlay ms-hidden' }, [card]);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) this.resolveConfirm(false); });
+    return overlay;
+  }
+
+  private resolveConfirm(v: boolean) {
+    this.confirmModal.classList.add('ms-hidden');
+    const r = this.confirmResolve;
+    this.confirmResolve = null;
+    r?.(v);
+  }
+
+  /** Mostra o modal de confirmação e resolve true/false conforme o botão clicado. */
+  private confirmDialog(title: string, message: string, yesLabel: string, noLabel: string): Promise<boolean> {
+    this.confirmTitleEl.textContent = title;
+    this.confirmMsgEl.textContent = message;
+    this.confirmYesBtn.textContent = yesLabel;
+    this.confirmNoBtn.textContent = noLabel;
+    this.confirmModal.classList.remove('ms-hidden');
+    return new Promise((resolve) => { this.confirmResolve = resolve; });
+  }
+
+  // ================= Histórico: geração de títulos em lote + import/export de backup =================
+
+  /** Mostra/esconde o banner "N reuniões sem título — sugerir com IA?" no topo da lista. */
+  private renderHistTitleBanner() {
+    const hi = t().history;
+    if (this.histBulkTitleBusy) {
+      this.histTitleBanner.classList.remove('ms-hidden');
+      return;
+    }
+    const count = this.histMetas.filter((m) => isGenericTitleText(m.title, m.meetingCode)).length;
+    if (count === 0 || !this.ollamaReady(store.get())) {
+      this.histTitleBanner.classList.add('ms-hidden');
+      return;
+    }
+    this.histTitleBanner.classList.remove('ms-hidden');
+    this.histTitleBanner.replaceChildren(
+      el('span', { class: 'ms-hist-ai-text', text: hi.generateTitlesHint(count) }),
+      (() => {
+        const b = el('button', { class: 'ms-btn ms-btn-primary ms-hist-ai-btn', type: 'button', text: hi.generateTitles }) as HTMLButtonElement;
+        b.addEventListener('click', () => void this.runBulkTitleGeneration());
+        return b;
+      })(),
+    );
+  }
+
+  /** Gera (via IA) um título para cada reunião com título genérico e PERSISTE no histórico
+   *  (diferente do download com IA, que só sugere para o arquivo baixado). */
+  private async runBulkTitleGeneration() {
+    if (this.histBulkTitleBusy) return;
+    const s = store.get();
+    if (!this.ollamaReady(s)) return;
+    const targets = this.histMetas.filter((m) => isGenericTitleText(m.title, m.meetingCode));
+    if (!targets.length) return;
+
+    this.histBulkTitleBusy = true;
+    let done = 0;
+    this.histTitleBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingTitles(done, targets.length) }));
+
+    for (const m of targets) {
+      try {
+        const saved = await loadMeeting(m.id);
+        if (saved && saved.session.transcript.length > 0) {
+          const title = await suggestMeetingTitle(saved.session, s.settings.ollamaUrl, s.settings.ollamaModel!, s.settings.vocabulary);
+          if (title) {
+            await renameMeeting(m.id, title);
+            m.title = title;
+          }
+        }
+      } catch {
+        /* segue pro próximo */
+      }
+      done++;
+      this.histTitleBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingTitles(done, targets.length) }));
+      this.renderHistoryList();
+    }
+
+    this.histBulkTitleBusy = false;
+    this.histMetas = await loadHistory();
+    this.renderHistoryList();
+  }
+
+  private showHistImportStatus(text: string, isError: boolean) {
+    this.histImportStatus.textContent = text;
+    this.histImportStatus.classList.remove('ms-hidden');
+    this.histImportStatus.classList.toggle('is-error', isError);
+    window.setTimeout(() => this.histImportStatus.classList.add('ms-hidden'), 4000);
+  }
+
+  private async handleImportFile() {
+    const file = this.histImportInput.files?.[0];
+    this.histImportInput.value = ''; // permite selecionar o mesmo arquivo de novo depois
+    if (!file) return;
+    const hi = t().history;
+    try {
+      const text = await file.text();
+      const result = await importMeetingBackup(text);
+      if (result.ok) {
+        this.showHistImportStatus(hi.importOk, false);
+        this.histMetas = await loadHistory();
+        this.renderHistoryList();
+      } else {
+        this.showHistImportStatus(hi.importError, true);
+      }
+    } catch {
+      this.showHistImportStatus(hi.importError, true);
+    }
+  }
 
   // ================= Atualização reativa =================
   private update(s: AppState) {

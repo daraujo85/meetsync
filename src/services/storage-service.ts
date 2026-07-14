@@ -179,6 +179,64 @@ export async function loadMeeting(id: string): Promise<SavedMeeting | null> {
   }
 }
 
+/** Renomeia uma reunião do histórico (índice + dados completos) — usado ao aplicar um título
+ *  sugerido por IA em lote. Diferente do download com IA, aqui o título É persistido. */
+export async function renameMeeting(id: string, title: string): Promise<void> {
+  try {
+    const index = await loadHistory();
+    const meta = index.find((m) => m.id === id);
+    if (meta) meta.title = title;
+    await chrome.storage.local.set({ [HISTORY_KEY]: index });
+
+    const res = await chrome.storage.local.get(MEETING_PREFIX + id);
+    const saved = res[MEETING_PREFIX + id] as SavedMeeting | undefined;
+    if (saved) {
+      saved.session.meetingTitle = title;
+      await chrome.storage.local.set({ [MEETING_PREFIX + id]: saved });
+    }
+  } catch {
+    /* falha ao renomear — ignora, mantém título anterior */
+  }
+}
+
+// ---- Backup de reunião (exportar/importar entre dispositivos) ----
+const BACKUP_SCHEMA = 'meetsync-backup';
+const BACKUP_SCHEMA_VERSION = 1;
+
+export type MeetingBackup = {
+  schema: typeof BACKUP_SCHEMA;
+  schemaVersion: typeof BACKUP_SCHEMA_VERSION;
+  starred: boolean;
+  saved: SavedMeeting;
+};
+
+/** Monta o JSON de backup de uma reunião — dá pra importar em outro dispositivo (com
+ *  transcrição, resumo e todas as funcionalidades funcionando normalmente, como se tivesse
+ *  sido capturada ali). Distinto do .json de export-txt (esse é pra automações/IA). */
+export function buildMeetingBackup(meta: HistoryMeta, saved: SavedMeeting): string {
+  const backup: MeetingBackup = { schema: BACKUP_SCHEMA, schemaVersion: BACKUP_SCHEMA_VERSION, starred: meta.starred, saved };
+  return JSON.stringify(backup, null, 2);
+}
+
+/** Importa um backup gerado por buildMeetingBackup: grava a reunião no histórico deste
+ *  dispositivo (upsert por session.id — reimportar o mesmo arquivo atualiza, não duplica). */
+export async function importMeetingBackup(json: string): Promise<{ ok: true } | { ok: false; error: 'invalid_json' | 'invalid_schema' }> {
+  let data: unknown;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    return { ok: false, error: 'invalid_json' };
+  }
+  const d = data as Partial<MeetingBackup> | null;
+  const session = d?.saved?.session;
+  if (d?.schema !== BACKUP_SCHEMA || !session?.id || !Array.isArray(session.transcript)) {
+    return { ok: false, error: 'invalid_schema' };
+  }
+  await saveMeeting(session, d.saved?.summaryText);
+  if (d.starred) await setMeetingStarred(session.id, true);
+  return { ok: true };
+}
+
 export async function deleteMeeting(id: string): Promise<void> {
   try {
     const index = (await loadHistory()).filter((m) => m.id !== id);

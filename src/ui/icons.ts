@@ -57,4 +57,7 @@ export const icons = {
   // Ícones de provedor (monocromáticos) para diferenciar a reunião no histórico.
   provMeet: stroke('<rect x="3" y="6.5" width="12" height="11" rx="2.5"/><path d="M15 10l5-2.5v9L15 14z"/>'),
   provTeams: stroke('<rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><path d="M8 8.5h8M12 8.5V16"/>'),
+  // Export/import de reunião (backup portátil entre dispositivos).
+  exportFile: stroke('<path d="M12 15V4M12 4l-3.5 3.5M12 4l3.5 3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>'),
+  importFile: stroke('<path d="M12 4v11M12 15l-3.5-3.5M12 15l3.5-3.5"/><path d="M4 15v3a2 2 0 002 2h12a2 2 0 002-2v-3"/>'),
 };

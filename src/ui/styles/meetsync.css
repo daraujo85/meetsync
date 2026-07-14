@@ -1017,3 +1017,20 @@ button {
 .ms-ask-typing span:nth-child(2) { animation-delay: 0.18s; }
 .ms-ask-typing span:nth-child(3) { animation-delay: 0.36s; }
 @keyframes ms-typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+/* ===== Histórico: busca+import, banner de títulos por IA, status de import ===== */
+.ms-hist-search-row { display: flex; align-items: center; gap: 8px; }
+.ms-hist-search-row .ms-input { flex: 1; min-width: 0; }
+.ms-hist-ai-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px; background: var(--ms-accent-blue-soft); border: 1px solid var(--ms-accent-blue-border); margin-bottom: 12px; }
+.ms-hist-ai-text { flex: 1; min-width: 0; font-size: 12.5px; color: var(--ms-text-primary); }
+.ms-hist-ai-btn { flex: none; min-height: 30px; padding: 5px 12px; font-size: 12.5px; }
+.ms-hist-import-status { padding: 9px 12px; border-radius: 10px; background: var(--ms-bg-app); border: 1px solid var(--ms-border-subtle); font-size: 12px; color: var(--ms-text-secondary); margin-bottom: 12px; }
+.ms-hist-import-status.is-error { color: var(--ms-danger-red); border-color: rgba(242, 139, 130, 0.32); background: var(--ms-danger-red-soft); }
+
+/* ===== Modal de confirmação genérico ===== */
+.ms-confirm-overlay { position: absolute; inset: 0; z-index: 40; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; border-radius: inherit; }
+.ms-confirm-card { background: var(--ms-bg-surface-elevated); border: 1px solid var(--ms-border-subtle); border-radius: 14px; padding: 20px; max-width: 260px; text-align: center; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
+.ms-confirm-title { font-size: 14px; font-weight: 600; color: var(--ms-text-primary); margin-bottom: 8px; }
+.ms-confirm-msg { font-size: 13.5px; color: var(--ms-text-secondary); line-height: 1.55; margin-bottom: 16px; }
+.ms-confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.ms-confirm-actions .ms-btn { flex: 1; }

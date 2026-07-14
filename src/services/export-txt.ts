@@ -12,12 +12,18 @@ function pad(n: number): string {
 // Meet ("Meet: xxx-yyyy-zzz"), Teams PT/EN/ES ("Reunião"/"Meeting"/"Reunión" [em "Canal"]).
 const GENERIC_TITLE_RE = /^(meet:|reuni(ã|a)o\b|meeting\b|reuni[oó]n\b)/i;
 
+/** O título (já resolvido, ex.: de um HistoryMeta) não é descritivo — é o padrão da
+ *  plataforma ou o próprio código da reunião? */
+export function isGenericTitleText(title: string, meetingCode?: string): boolean {
+  const t = (title || '').trim();
+  if (!t) return true;
+  if (meetingCode && t === meetingCode) return true;
+  return GENERIC_TITLE_RE.test(t);
+}
+
 /** A reunião não tem um título descritivo real (é o padrão da plataforma ou o próprio código)? */
 export function isGenericTitle(session: MeetingSession): boolean {
-  const title = (session.meetingTitle || '').trim();
-  if (!title) return true;
-  if (session.meetingCode && title === session.meetingCode) return true;
-  return GENERIC_TITLE_RE.test(title);
+  return isGenericTitleText(session.meetingTitle || '', session.meetingCode);
 }
 
 /** HH:MM em horário local a partir de ISO. */
