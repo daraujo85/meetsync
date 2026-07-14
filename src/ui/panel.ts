@@ -280,6 +280,7 @@ export class Panel {
   private histBulkTitleBusy = false;
   private histAtaBanner!: HTMLElement;
   private histBulkAtaBusy = false;
+  private histBulkAtaNoAiBusy = false;
   /** Card do histórico com um spinner + rótulo (ex.: "Gerando título…") — para acompanhar
    *  visualmente QUAL reunião está sendo processada durante uma operação em lote. */
   private histProcessingId: string | null = null;
@@ -1715,8 +1716,8 @@ export class Panel {
       this.histTitleBanner.classList.remove('ms-hidden');
       return;
     }
-    // Some enquanto o outro lote (atas) estiver rodando — evita rodar os dois ao mesmo tempo.
-    if (this.histBulkAtaBusy) { this.histTitleBanner.classList.add('ms-hidden'); return; }
+    // Some enquanto o outro lote (atas, com ou sem IA) estiver rodando — evita rodar 2 ao mesmo tempo.
+    if (this.histBulkAtaBusy || this.histBulkAtaNoAiBusy) { this.histTitleBanner.classList.add('ms-hidden'); return; }
     const count = this.histMetas.filter((m) => this.needsTitle(m)).length;
     if (count === 0 || !this.ollamaReady(store.get())) {
       this.histTitleBanner.classList.add('ms-hidden');
@@ -1773,25 +1774,28 @@ export class Panel {
     this.renderHistoryList();
   }
 
-  /** Mostra/esconde o banner "N reuniões sem ata — gerar com IA?" no topo da lista. */
+  /** Mostra/esconde o banner "N reuniões sem ata — gerar (com ou sem IA)?" no topo da lista.
+   *  Sem Ollama conectado, oferece a versão determinística (TextTiling + TextRank + MMR) em vez
+   *  de simplesmente esconder o banner — assim quem não roda IA local também ganha esse atalho. */
   private renderHistAtaBanner() {
     const hi = t().history;
-    if (this.histBulkAtaBusy) {
+    if (this.histBulkAtaBusy || this.histBulkAtaNoAiBusy) {
       this.histAtaBanner.classList.remove('ms-hidden');
       return;
     }
     if (this.histBulkTitleBusy) { this.histAtaBanner.classList.add('ms-hidden'); return; }
     const count = this.histMetas.filter((m) => !m.hasSummary).length;
-    if (count === 0 || !this.ollamaReady(store.get())) {
+    if (count === 0) {
       this.histAtaBanner.classList.add('ms-hidden');
       return;
     }
     this.histAtaBanner.classList.remove('ms-hidden');
+    const ai = this.ollamaReady(store.get());
     this.histAtaBanner.replaceChildren(
-      el('span', { class: 'ms-hist-ai-text', text: hi.generateAtasHint(count) }),
+      el('span', { class: 'ms-hist-ai-text', text: ai ? hi.generateAtasHint(count) : hi.generateAtasHintNoAi(count) }),
       (() => {
-        const b = el('button', { class: 'ms-btn ms-btn-primary ms-hist-ai-btn', type: 'button', text: hi.generateAtas }) as HTMLButtonElement;
-        b.addEventListener('click', () => void this.runBulkAtaGeneration());
+        const b = el('button', { class: 'ms-btn ms-btn-primary ms-hist-ai-btn', type: 'button', text: ai ? hi.generateAtas : hi.generateAtasNoAi }) as HTMLButtonElement;
+        b.addEventListener('click', () => void (ai ? this.runBulkAtaGeneration() : this.runBulkAtaGenerationNoAi()));
         return b;
       })(),
     );
@@ -1800,7 +1804,7 @@ export class Panel {
   /** Gera (via IA) e PERSISTE a ata de cada reunião sem ata, uma de cada vez — mesmo padrão
    *  visual da geração de títulos em lote (spinner no card atual). */
   private async runBulkAtaGeneration() {
-    if (this.histBulkAtaBusy || this.histBulkTitleBusy) return;
+    if (this.histBulkAtaBusy || this.histBulkAtaNoAiBusy || this.histBulkTitleBusy) return;
     const s = store.get();
     if (!this.ollamaReady(s)) return;
     const targets = this.histMetas.filter((m) => !m.hasSummary);
@@ -1831,6 +1835,42 @@ export class Panel {
 
     this.histProcessingId = null;
     this.histBulkAtaBusy = false;
+    this.histMetas = await loadHistory();
+    this.renderHistoryList();
+  }
+
+  /** Mesma ideia de runBulkAtaGeneration, mas com o resumo determinístico (sem Ollama) — pra
+   *  quem não tem IA local, gerar em lote continua disponível. */
+  private async runBulkAtaGenerationNoAi() {
+    if (this.histBulkAtaBusy || this.histBulkAtaNoAiBusy || this.histBulkTitleBusy) return;
+    const targets = this.histMetas.filter((m) => !m.hasSummary);
+    if (!targets.length) return;
+
+    this.histBulkAtaNoAiBusy = true;
+    let done = 0;
+    this.histAtaBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingAtasNoAi(done, targets.length) }));
+
+    for (const m of targets) {
+      this.histProcessingId = m.id;
+      this.histProcessingLabel = t().history.genAtaBusyNoAi;
+      this.renderHistoryList();
+      try {
+        const saved = await loadMeeting(m.id);
+        if (saved && saved.session.transcript.length > 0) {
+          const text = buildDeterministicSummaryI18n(saved.session);
+          await updateMeetingSummary(m.id, text);
+          m.hasSummary = true;
+        }
+      } catch {
+        /* segue pro próximo */
+      }
+      done++;
+      this.histAtaBanner.replaceChildren(el('span', { class: 'ms-hist-ai-text', text: t().history.generatingAtasNoAi(done, targets.length) }));
+      this.renderHistoryList();
+    }
+
+    this.histProcessingId = null;
+    this.histBulkAtaNoAiBusy = false;
     this.histMetas = await loadHistory();
     this.renderHistoryList();
   }
