@@ -134,6 +134,31 @@ Capturar, organizar y exportar la transcripción (subtítulos y chat) de reunion
 
 ---
 
+# Novidades / What's new / Novedades — v0.4.4
+
+## 🇧🇷 Português
+**Histórico mais inteligente**
+- **Contador de participantes** direto no card da lista.
+- **Título sugerido por IA** ao baixar reuniões sem nome descritivo (ex.: "Meet: xxx" vira algo como "Alinhamento de sprint") — vale só pro arquivo baixado.
+- **Gerar títulos em lote:** um botão no histórico sugere e SALVA um título pra todas as reuniões sem nome de uma vez, atualizando a lista em tempo real.
+- **Exportar/importar reunião:** baixe um backup de uma reunião e importe em outro computador, com tudo funcionando normalmente (transcrição, resumo, exportação, perguntas por IA).
+- **Confirmação antes de excluir** uma reunião do histórico.
+- Corrigido: a ata gerada ao baixar com IA agora fica salva de verdade no histórico (antes só aparecia no arquivo, mas o histórico continuava marcando "Sem ata").
+
+## 🇺🇸 English
+**Smarter history**
+- **Participant counter** right on the list card.
+- **AI-suggested title** when downloading meetings without a real name.
+- **Bulk title generation:** one button suggests and SAVES a title for every untitled meeting, updating the list live.
+- **Export/import a meeting:** download a backup and import it on another computer, fully working (transcript, summary, export, AI Q&A).
+- **Confirmation before deleting** a meeting from history.
+- Fixed: the summary generated via AI download is now actually saved to history.
+
+## 🇪🇸 Español
+**Historial más inteligente:** contador de participantes, título sugerido por IA, generación de títulos en lote, exportar/importar reunión entre computadoras, confirmación antes de eliminar, y corrección del acta que no se guardaba en el historial.
+
+---
+
 # Novidades / What's new / Novedades — v0.4.3
 
 ## 🇧🇷 Português
