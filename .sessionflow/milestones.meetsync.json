@@ -64,6 +64,16 @@
       "id": "release-0-4-3",
       "title": "Release 0.4.3: Teams + eventos, store text, zip, tag",
       "status": "done"
+    },
+    {
+      "id": "historico-titulos-backup-confirm",
+      "title": "Histórico: contador, título IA, backup import/export, confirmação de exclusão, fix ata",
+      "status": "done"
+    },
+    {
+      "id": "release-0-4-4",
+      "title": "Release 0.4.4 publicada na Chrome Web Store",
+      "status": "done"
     }
   ]
 }
