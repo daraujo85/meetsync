@@ -9,6 +9,7 @@ import { icons } from '@/ui/icons';
 import { loadHistory, loadMeeting, loadSettings, requestOpenHistory, updateMeetingSummary, type HistoryMeta } from '@/services/storage-service';
 import { buildTxt, buildFilename, buildHeader, buildSummaryTxt, buildMeetingJson, summarySectionBlock, downloadText, isGenericTitle } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, suggestMeetingTitle } from '@/services/summary-service';
+import { buildDeterministicSummaryI18n } from '@/services/deterministic-summary';
 import type { UserSettings } from '@/types';
 import { t, bcp47, setLocale, resolveLocale } from '@/i18n';
 
@@ -241,7 +242,15 @@ function recoveryCard(): HTMLElement | null {
   const downloadRaw = () => {
     void (async () => {
       const saved = await loadMeeting(last.id);
-      if (saved) downloadText(buildFilename(saved.session), buildTxt(saved.session, { includeHeader: true }));
+      if (!saved) return;
+      // Sem ata ainda? Gera a versão sem IA na hora (instantânea, sem custo) e já anexa no
+      // arquivo — igual já fazemos no "Baixar com IA", só que sem precisar do Ollama.
+      let summaryText = saved.summaryText;
+      if (!summaryText) {
+        summaryText = buildDeterministicSummaryI18n(saved.session);
+        try { await updateMeetingSummary(last.id, summaryText); } catch { /* baixa mesmo assim */ }
+      }
+      downloadText(buildFilename(saved.session), buildTxt(saved.session, { includeHeader: true, summaryText }));
     })();
   };
 

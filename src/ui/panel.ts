@@ -32,7 +32,7 @@ import {
 } from '@/services/export-txt';
 import { correctTranscript, summarizeMeeting, summarizeMeetingStream, askMeetingStream, suggestMeetingTitle, looksLikeBadAiTitle, formatSummaryForWhatsappAi, type ChatTurn } from '@/services/summary-service';
 import { formatSummaryForWhatsapp } from '@/services/whatsapp-format';
-import { buildDeterministicSummary } from '@/services/deterministic-summary';
+import { buildDeterministicSummaryI18n } from '@/services/deterministic-summary';
 import { ollama, normalizeOllamaUrl } from '@/services/ollama-client';
 import { initials } from '@/content/participant-resolver';
 import { t, bcp47, getLocale, seedWatchText, LOCALES, type Locale } from '@/i18n';
@@ -464,7 +464,7 @@ export class Panel {
     this.ccBtn.addEventListener('click', () => this.controller.toggleCaptions());
 
     const dlBtn = el('button', { class: 'ms-icon-btn', title: c.downloadTxt, 'aria-label': c.downloadAria, html: icons.download });
-    dlBtn.addEventListener('click', () => this.quickDownload());
+    dlBtn.addEventListener('click', () => void this.quickDownload());
 
     // Sininho de alertas (abre a aba Alertas; mostra estado de arme + não-lidos).
     this.bellIcon = el('span', { class: 'ms-bell-ico', html: icons.ear });
@@ -1103,7 +1103,7 @@ export class Panel {
     this.downloadBtn = el('button', { class: 'ms-btn ms-btn-primary ms-grow', type: 'button', text: t().footer.downloadTxt }) as HTMLButtonElement;
     this.downloadBtn.addEventListener('click', () => this.fullDownload());
     this.downloadRawBtn = el('button', { class: 'ms-btn ms-btn-secondary ms-hidden', type: 'button', title: t().footer.downloadWithoutAi, text: t().footer.downloadTxtShort }) as HTMLButtonElement;
-    this.downloadRawBtn.addEventListener('click', () => this.quickDownload());
+    this.downloadRawBtn.addEventListener('click', () => void this.quickDownload());
     this.footer = el('div', { class: 'ms-footer' }, [el('div', { class: 'ms-btn-row' }, [this.downloadBtn, this.downloadRawBtn])]);
     return this.footer;
   }
@@ -1477,9 +1477,16 @@ export class Panel {
     // ações
     const aiReady = this.ollamaReady(store.get());
     const askAct = this.histAction(icons.chatBubble, t().ask.historyAction, aiReady ? t().ask.historyActionSub : hi.dlAiSubNoOllama, !aiReady, () => this.openAsk(session, m.title));
-    const dlTxt = this.histAction(icons.download, hi.dlTxt, hi.dlTxtSub, false, () =>
-      downloadText(buildFilename(session), buildTxt(session, { includeHeader: true })),
-    );
+    const dlTxt = this.histAction(icons.download, hi.dlTxt, hi.dlTxtSub, false, () => void (async () => {
+      // Sem ata ainda? Gera a versão sem IA na hora (instantânea, sem custo) e já anexa no
+      // arquivo — igual já fazemos no "Baixar .txt com IA", só que sem precisar do Ollama.
+      let text = summaryText;
+      if (!text) {
+        text = buildDeterministicSummaryI18n(session);
+        try { await updateMeetingSummary(session.id, text); m.hasSummary = true; } catch { /* baixa mesmo assim */ }
+      }
+      downloadText(buildFilename(session), buildTxt(session, { includeHeader: true, summaryText: text }));
+    })());
     let aiBusy = false;
     const dlAi = this.histAction(icons.sparkles, hi.dlAi, aiReady ? hi.dlAiSub : hi.dlAiSubNoOllama, !aiReady, () => void (async () => {
       if (aiBusy) return;
@@ -1611,17 +1618,7 @@ export class Panel {
       downloadText(buildFilename(session, '_backup', 'json'), buildMeetingBackup(m, saved)),
     );
     const genAtaNoAi = this.histAction(icons.doc, hi.genAtaNoAi, summaryText ? hi.genAtaSubDone : hi.genAtaNoAiSub, !!summaryText, () => void (async () => {
-      const text = buildDeterministicSummary(session, t().exportFile.untitledMeeting, {
-        title: hi.noAiSummaryTitle,
-        disclaimer: hi.noAiSummaryDisclaimer,
-        meeting: hi.noAiSummaryMeeting,
-        duration: hi.noAiSummaryDuration,
-        participants: hi.noAiSummaryParticipants,
-        participation: hi.noAiSummaryParticipation,
-        words: hi.noAiSummaryWords,
-        lines: hi.noAiSummaryLines,
-        excerpts: hi.noAiSummaryExcerpts,
-      });
+      const text = buildDeterministicSummaryI18n(session);
       await updateMeetingSummary(session.id, text);
       this.histMetas = await loadHistory();
       const fresh = this.histMetas.find((x) => x.id === m.id) ?? m;
@@ -2169,11 +2166,20 @@ export class Panel {
   }
 
   // ================= Ações =================
-  private quickDownload() {
+  private async quickDownload() {
     const s = store.get();
     if (!s.session.captureEndedAt) store.setCaptureEndedAt(new Date().toISOString());
-    const content = buildTxt(store.get().session, { includeHeader: s.settings.includeHeaderByDefault });
-    downloadText(buildFilename(store.get().session), content);
+    const session = store.get().session;
+    // Sem ata ainda? Gera a versão sem IA na hora (instantânea, sem custo) e já anexa no
+    // arquivo — igual já fazemos no "Baixar .txt com IA", só que sem precisar do Ollama.
+    let summaryText = store.get().ui.summaryText;
+    if (!summaryText) {
+      summaryText = buildDeterministicSummaryI18n(session);
+      store.patchUi({ summaryText });
+      try { await updateMeetingSummary(session.id, summaryText); } catch { /* baixa mesmo assim */ }
+    }
+    const content = buildTxt(session, { includeHeader: s.settings.includeHeaderByDefault, summaryText });
+    downloadText(buildFilename(session), content);
   }
 
   private async testOllama() {
