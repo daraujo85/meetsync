@@ -134,6 +134,29 @@ Capturar, organizar y exportar la transcripción (subtítulos y chat) de reunion
 
 ---
 
+# Novidades / What's new / Novedades — v0.4.5
+
+## 🇧🇷 Português
+**Resumo sem IA, agora bem melhor (experimental)**
+- O "Gerar resumo sem IA" — pra quem não roda Ollama local — deixou de ser só uma lista de trechos centrais: agora segmenta a reunião por assunto, identifica decisões/ações/prazos/bloqueios/questões em aberto por padrões de linguagem, e remove repetições quase idênticas.
+- Esse resumo passa a ser gerado automaticamente (se ainda não existir) sempre que você baixa a transcrição sem IA — no histórico, no painel ao vivo e no popup.
+- O botão de gerar sem IA no histórico agora também permite gerar de novo mesmo se já existir uma ata.
+- Novo: geração de atas em lote também sem IA (banner no topo do histórico, antes só aparecia com Ollama conectado).
+- Corrigido: erro ao copiar a ata pro WhatsApp quando a aba perdia o foco durante a chamada à IA.
+
+## 🇺🇸 English
+**No-AI summary, now much better (experimental)**
+- "Generate summary without AI" — for people not running a local Ollama — is no longer just a list of central excerpts: it now segments the meeting by topic, flags decisions/actions/deadlines/blockers/open questions via language patterns, and removes near-duplicate repeats.
+- This summary is now generated automatically (if missing) whenever you download the raw transcript — in history, the live panel and the popup.
+- The no-AI generate button in history can now also regenerate even if a summary already exists.
+- New: bulk summary generation without AI too (banner at the top of history, previously only shown with Ollama connected).
+- Fixed: copying the summary to WhatsApp could fail silently if the tab lost focus during the AI call.
+
+## 🇪🇸 Español
+**Resumen sin IA, ahora mucho mejor (experimental):** ahora segmenta la reunión por tema, identifica decisiones/acciones/plazos/bloqueos/preguntas abiertas mediante patrones de lenguaje y elimina repeticiones casi idénticas; se genera automáticamente al descargar la transcripción sin IA; el botón de generar sin IA en el historial ahora permite regenerar aunque ya exista un acta; generación de actas en lote también sin IA; y corrección de un error al copiar al WhatsApp.
+
+---
+
 # Novidades / What's new / Novedades — v0.4.4
 
 ## 🇧🇷 Português

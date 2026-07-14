@@ -205,25 +205,25 @@ function segmentByTopic(sentences: Sentence[], windowSize = 3, minSegmentLen = 5
     return (leftPeak - score) + (rightPeak - score);
   });
 
-  const mean = depth.reduce((a, b) => a + b, 0) / (depth.length || 1);
-  const variance = depth.reduce((a, b) => a + (b - mean) ** 2, 0) / (depth.length || 1);
-  const threshold = mean + 0.5 * Math.sqrt(variance);
-
-  const candidates = depth
+  // Rankeia os vales pela PROFUNDIDADE (maior troca de assunto primeiro) — não pela posição. Se
+  // ordenássemos por posição, uma reunião com muita conversa fiada nos primeiros minutos (muitas
+  // trocas de assunto pequenas) esgotaria o teto de segmentos logo ali, e o resto inteiro da
+  // reunião viraria um único bloco gigante (foi exatamente o bug observado: 5 segmentos nos
+  // primeiros 7min + 1 segmento cobrindo os 50min restantes).
+  const ranked = depth
     .map((d, i) => ({ i, d }))
-    .filter(({ d }) => d > threshold && d > 0)
-    .sort((a, b) => a.i - b.i);
+    .filter(({ d }) => d > 0)
+    .sort((a, b) => b.d - a.d);
 
   const boundaries: number[] = [];
-  let lastBoundary = 0;
-  for (const { i } of candidates) {
+  for (const { i } of ranked) {
+    if (boundaries.length >= maxSegments - 1) break;
     const b = i + 1; // fronteira logo depois da sentença i
-    if (b - lastBoundary >= minSegmentLen && n - b >= minSegmentLen) {
-      boundaries.push(b);
-      lastBoundary = b;
-      if (boundaries.length >= maxSegments - 1) break;
-    }
+    if (b < minSegmentLen || n - b < minSegmentLen) continue;
+    if (boundaries.some((existing) => Math.abs(existing - b) < minSegmentLen)) continue;
+    boundaries.push(b);
   }
+  boundaries.sort((a, b) => a - b);
 
   const segments: Sentence[][] = [];
   let start = 0;
@@ -248,22 +248,27 @@ function topicLabel(segment: Sentence[], max = 3): string {
 }
 
 /** MMR (Maximal Marginal Relevance): a cada passo escolhe o item com melhor equilíbrio entre
- *  score próprio e "distância" do que já foi escolhido, evitando 3 sentenças quase idênticas na
- *  mesma seção. lambda alto = prioriza score; lambda baixo = prioriza diversidade. */
-function selectWithMMR(items: { sentence: Sentence; score: number }[], limit: number, lambda = 0.7): Sentence[] {
+ *  score próprio e "distância" do que já foi escolhido. lambda alto = prioriza score; lambda
+ *  baixo = prioriza diversidade. Além de desempatar por diversidade, DESCARTA de vez (não só
+ *  desprioriza) candidatos quase idênticos a algo já escolhido — sem isso, quando o "banco" de
+ *  candidatos de uma categoria é pequeno (ex.: alguém repete a mesma decisão em 3 falas seguidas),
+ *  o MMR acaba pegando as 3 quase-cópias só pra preencher a cota. */
+function selectWithMMR(items: { sentence: Sentence; score: number }[], limit: number, lambda = 0.7, dedupThreshold = 0.75): Sentence[] {
   const selected: { sentence: Sentence; score: number }[] = [];
   const remaining = [...items];
   while (selected.length < limit && remaining.length > 0) {
-    let bestIdx = 0;
+    let bestIdx = -1;
     let bestMmr = -Infinity;
     for (let i = 0; i < remaining.length; i++) {
       const cand = remaining[i]!;
       const redundancy = selected.length === 0
         ? 0
         : Math.max(...selected.map((s) => similarity(cand.sentence.tokens, s.sentence.tokens)));
+      if (redundancy > dedupThreshold) continue; // quase-cópia de algo já escolhido — descarta de vez
       const mmr = lambda * cand.score - (1 - lambda) * redundancy;
       if (mmr > bestMmr) { bestMmr = mmr; bestIdx = i; }
     }
+    if (bestIdx === -1) break; // só sobraram quase-cópias — para em vez de forçar a cota
     selected.push(remaining.splice(bestIdx, 1)[0]!);
   }
   return selected.map((s) => s.sentence).sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
